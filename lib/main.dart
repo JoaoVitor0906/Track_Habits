@@ -58,13 +58,34 @@ class TrackHabitsApp extends StatelessWidget {
 }
 
 // Minimal HomePage used by routes
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> _habits = [];
+
+  Future<void> _loadHabits() async {
+    final prefs = Provider.of<PrefsService>(context, listen: false);
+    setState(() {
+      _habits = prefs.getAllHabits();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // initial load will run after first build to have context available
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHabits());
+  }
 
   @override
   Widget build(BuildContext context) {
     final prefs = Provider.of<PrefsService>(context, listen: false);
-    final habits = prefs.getAllHabits();
+    final habits = _habits;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Home'), actions: [
@@ -100,11 +121,18 @@ class HomePage extends StatelessWidget {
                             });
                             await prefs.setBoolKey('first_habit_created', true);
                             await prefs.setStringKey('first_habit_id', id);
-                            if (context.mounted)
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                       content:
                                           Text('Hábito criado: Beber água')));
+                              await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => HabitDetailPage(habitId: id)));
+                              // reload after returning from detail
+                              if (mounted) await _loadHabits();
+                            }
                           },
                           child: const Text('Criar meu 1º hábito'))
                     ],
@@ -115,18 +143,29 @@ class HomePage extends StatelessWidget {
               const Text('Seus hábitos:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
-              Expanded(
-                  child: ListView.builder(
-                      itemCount: habits.length,
-                      itemBuilder: (ctx, i) {
-                        final h = habits[i];
-                        return ListTile(
-                            title: Text(h['title'] ?? '—'),
-                            subtitle: Text(h['goal'] ?? ''),
-                            trailing: IconButton(
-                                icon: const Icon(Icons.check),
-                                onPressed: () {}));
-                      }))
+            Expanded(
+              child: ListView.builder(
+                itemCount: habits.length,
+                itemBuilder: (ctx, i) {
+                final h = habits[i];
+                final id = h['id'] as String?;
+                return ListTile(
+                  title: Text(h['title'] ?? '—'),
+                  subtitle: Text(h['goal'] ?? ''),
+                  onTap: id != null
+                    ? () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => HabitDetailPage(habitId: id)));
+                      // reload after returning
+                      if (mounted) await _loadHabits();
+                      }
+                    : null,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.check),
+                    onPressed: () {}));
+                }))
             ]
           ],
         ),
@@ -203,7 +242,7 @@ class PrefsService {
   // New habit APIs: save/get/delete by id and list of ids in _habitsListKey
   Future<String> saveHabit(Map<String, dynamic> habit) async {
     final id = (habit['id'] as String?) ?? const Uuid().v4();
-    final key = 'habit_\$id';
+    final key = 'habit_$id';
     final withId = Map<String, dynamic>.from(habit);
     withId['id'] = id;
     await _prefs.setString(key, jsonEncode(withId));
@@ -216,13 +255,13 @@ class PrefsService {
   }
 
   Map<String, dynamic>? getHabit(String id) {
-    final raw = _prefs.getString('habit_\$id');
+    final raw = _prefs.getString('habit_$id');
     if (raw == null) return null;
     return Map<String, dynamic>.from(jsonDecode(raw));
   }
 
   Future<void> deleteHabit(String id) async {
-    await _prefs.remove('habit_\$id');
+    await _prefs.remove('habit_$id');
     final ids = _prefs.getStringList(_habitsListKey) ?? [];
     ids.remove(id);
     await _prefs.setStringList(_habitsListKey, ids);
@@ -306,11 +345,17 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(milliseconds: 1200));
 
     if (prefs.isFullyAccepted) {
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } else if (prefs.isOnboardingCompleted) {
-      if (mounted) Navigator.pushReplacementNamed(context, '/consent');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/consent');
+      }
     } else {
-      if (mounted) Navigator.pushReplacementNamed(context, '/onboarding');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/onboarding');
+      }
     }
   }
 
@@ -452,9 +497,10 @@ class _OnboardingScreen extends StatelessWidget {
                 ElevatedButton.icon(
                     onPressed: onNext,
                     icon: const Icon(Icons.arrow_forward),
-                    style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(120, 48),
-                        backgroundColor: const Color(0xFF059669)),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(120, 48),
+            backgroundColor: const Color(0xFF059669),
+            foregroundColor: Colors.white),
                     label: const Text('Avançar')),
               if (onSkip != null)
                 TextButton(
@@ -511,18 +557,27 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
   final ScrollController _scrollController = ScrollController();
   double _scrollProgress = 0.0;
   bool _isRead = false;
-  PrefsService? _prefs;
+  bool _didInit = false;
 
   @override
   void initState() {
     super.initState();
-    SharedPreferences.getInstance().then((prefs) {
-      setState(() {
-        _prefs = PrefsService(prefs);
-      });
-    });
     // We'll handle scroll progress via ScrollNotification in the build method to be
     // more robust on the web (maxScrollExtent may not be available immediately).
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didInit) {
+      final prefs = Provider.of<PrefsService>(context, listen: false);
+      setState(() {
+        _isRead = widget.policyType == 'privacy'
+            ? prefs.isPrivacyRead
+            : prefs.isTermsRead;
+        _didInit = true;
+      });
+    }
   }
 
   @override
@@ -546,9 +601,10 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
       body: FutureBuilder<String>(
         future: _loadPolicy(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
+          }
+          if (snapshot.hasError) {
             return Center(
                 child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -560,6 +616,7 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
                           onPressed: () => Navigator.pop(context, false),
                           child: const Text('Voltar'))
                     ])));
+          }
 
           // Ensure that if content is smaller than the viewport we immediately
           // enable the "Marcar como lido" action.
@@ -616,7 +673,8 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
                   onPressed: _isRead ? _markAsRead : null,
                   icon: const Icon(Icons.check),
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: _isRead ? const Color(0xFF059669) : null,
+            backgroundColor: _isRead ? const Color(0xFF059669) : null,
+            foregroundColor: _isRead ? Colors.white : null,
                       minimumSize: const Size(double.infinity, 48)),
                   label: const Text('Marcar como lido'),
                 ),
@@ -629,12 +687,11 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
   }
 
   Future<void> _markAsRead() async {
-    if (_prefs == null) {
-      final sp = await SharedPreferences.getInstance();
-      _prefs = PrefsService(sp);
+    final prefs = Provider.of<PrefsService>(context, listen: false);
+    await prefs.setPolicyRead(widget.policyType, true);
+    if (mounted) {
+      Navigator.pop(context, true);
     }
-    await _prefs!.setPolicyRead(widget.policyType, true);
-    if (mounted) Navigator.pop(context, true);
   }
 }
 
@@ -647,17 +704,18 @@ class ConsentPage extends StatefulWidget {
 class _ConsentPageState extends State<ConsentPage> {
   bool _privacyRead = false;
   bool _termsRead = false;
-  PrefsService? _prefs;
-
   @override
   void initState() {
     super.initState();
-    SharedPreferences.getInstance().then((prefs) {
-      setState(() {
-        _prefs = PrefsService(prefs);
-        _privacyRead = _prefs!.isPrivacyRead;
-        _termsRead = _prefs!.isTermsRead;
-      });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final prefs = Provider.of<PrefsService>(context, listen: false);
+    setState(() {
+      _privacyRead = prefs.isPrivacyRead;
+      _termsRead = prefs.isTermsRead;
     });
   }
 
@@ -716,14 +774,16 @@ class _ConsentPageState extends State<ConsentPage> {
               onPressed: _canAccept
                   ? () async {
                       final navigator = Navigator.of(context);
-                      await _prefs!.acceptPolicies();
+                      final prefs = Provider.of<PrefsService>(context, listen: false);
+                      await prefs.acceptPolicies();
                       if (!mounted) return;
                       navigator.pushReplacementNamed('/home');
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                  maximumSize: const Size(double.infinity, 48),
-                  backgroundColor: _canAccept ? const Color(0xFF059669) : null),
+          maximumSize: const Size(double.infinity, 48),
+          backgroundColor: _canAccept ? const Color(0xFF059669) : null,
+          foregroundColor: _canAccept ? Colors.white : null),
               child: const Text('Aceitar e continuar'),
             ),
           ],
@@ -733,8 +793,26 @@ class _ConsentPageState extends State<ConsentPage> {
   }
 }
 
-class CreateHabitPage extends StatelessWidget {
+class CreateHabitPage extends StatefulWidget {
   const CreateHabitPage({super.key});
+
+  @override
+  State<CreateHabitPage> createState() => _CreateHabitPageState();
+}
+
+class _CreateHabitPageState extends State<CreateHabitPage> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _goalController = TextEditingController();
+  final TextEditingController _reminderController = TextEditingController();
+  bool _enabled = true;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _goalController.dispose();
+    _reminderController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -743,20 +821,43 @@ class CreateHabitPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Criar hábito')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const TextField(
-            decoration: InputDecoration(labelText: 'Título'),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          TextField(
+            controller: _titleController,
+            decoration: const InputDecoration(labelText: 'Título'),
           ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _goalController,
+            decoration: const InputDecoration(labelText: 'Meta'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reminderController,
+            decoration: const InputDecoration(labelText: 'Lembrete (HH:MM)'),
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            const Text('Ativado'),
+            const SizedBox(width: 12),
+            Switch(value: _enabled, onChanged: (v) => setState(() => _enabled = v))
+          ]),
           const SizedBox(height: 12),
           ElevatedButton(
               onPressed: () async {
-                // quick-create a sample habit
+                final title = _titleController.text.trim();
+                final goal = _goalController.text.trim();
+                final reminder = _reminderController.text.trim();
+                if (title.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Título é obrigatório')));
+                  return;
+                }
                 final id = await prefs.saveHabit({
-                  'title': 'Beber água',
-                  'goal': '3 copos/dia',
-                  'reminder': '09:00',
-                  'enabled': true
+                  'title': title,
+                  'goal': goal,
+                  'reminder': reminder,
+                  'enabled': _enabled
                 });
                 await prefs.setBoolKey('first_habit_created', true);
                 await prefs.setStringKey('first_habit_id', id);
@@ -815,14 +916,17 @@ class SettingsPrivacyPage extends StatelessWidget {
                     action: SnackBarAction(
                         label: 'Desfazer',
                         onPressed: () async {
-                          if (prevVersion != null)
+                          if (prevVersion != null) {
                             await prefs.setStringKey(
                                 'policies_version_accepted', prevVersion);
-                          if (prevAt != null)
+                          }
+                          if (prevAt != null) {
                             await prefs.setStringKey('accepted_at', prevAt);
+                          }
                           await prefs.setBoolKey('onboarding_completed', true);
-                          if (context.mounted)
+                          if (context.mounted) {
                             Navigator.pushReplacementNamed(context, '/home');
+                          }
                         }),
                   ));
                   // navigate back to home or to consent flow depending on undo
@@ -830,6 +934,122 @@ class SettingsPrivacyPage extends StatelessWidget {
                 }
               },
               child: const Text('Revogar consentimento'))
+        ]),
+      ),
+    );
+  }
+}
+
+// Page to view and edit a single habit
+class HabitDetailPage extends StatefulWidget {
+  final String habitId;
+  const HabitDetailPage({super.key, required this.habitId});
+
+  @override
+  State<HabitDetailPage> createState() => _HabitDetailPageState();
+}
+
+class _HabitDetailPageState extends State<HabitDetailPage> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _goalController = TextEditingController();
+  final TextEditingController _reminderController = TextEditingController();
+  bool _enabled = true;
+  PrefsService? _prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = Provider.of<PrefsService>(context, listen: false);
+    _prefs = prefs;
+    final h = prefs.getHabit(widget.habitId);
+    if (h != null) {
+      _titleController.text = (h['title'] as String?) ?? '';
+      _goalController.text = (h['goal'] as String?) ?? '';
+      _reminderController.text = (h['reminder'] as String?) ?? '';
+      _enabled = (h['enabled'] as bool?) ?? true;
+      if (mounted) {
+        setState(() {});
+      }
+    } else {
+      // Habit missing -> pop
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _goalController.dispose();
+    _reminderController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Título é obrigatório')));
+      return;
+    }
+    await _prefs!.saveHabit({
+      'id': widget.habitId,
+      'title': title,
+      'goal': _goalController.text.trim(),
+      'reminder': _reminderController.text.trim(),
+      'enabled': _enabled
+    });
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _delete() async {
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: const Text('Excluir hábito?'),
+              content: const Text('Esta ação removerá o hábito permanentemente.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Excluir'))
+              ],
+            ));
+    if (ok == true) {
+      await _prefs!.deleteHabit(widget.habitId);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Detalhes do hábito')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Título')),
+          const SizedBox(height: 12),
+          TextField(controller: _goalController, decoration: const InputDecoration(labelText: 'Meta')),
+          const SizedBox(height: 12),
+          TextField(controller: _reminderController, decoration: const InputDecoration(labelText: 'Lembrete (HH:MM)')),
+          const SizedBox(height: 12),
+          Row(children: [
+            const Text('Ativado'),
+            const SizedBox(width: 12),
+            Switch(value: _enabled, onChanged: (v) => setState(() => _enabled = v))
+          ]),
+          const SizedBox(height: 16),
+          ElevatedButton(onPressed: _save, child: const Text('Salvar')),
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: _delete, child: const Text('Excluir'))
         ]),
       ),
     );
