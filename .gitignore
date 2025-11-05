@@ -1,0 +1,28 @@
+# Flutter/Dart
+.dart_tool/
+build/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-plugins-*
+pubspec.lock
+
+# VS Code
+.vscode/
+
+# macOS
+*.DS_Store
+
+# IntelliJ
+*.iml
+.idea/
+
+# Others
+**/android/local.properties
+**/ios/Pods/
+**/ios/Flutter/Generated.xcconfig
+
+# Generated files
+/generated/

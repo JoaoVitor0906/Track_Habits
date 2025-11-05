@@ -39,7 +39,7 @@ dependencies:
   shared_preferences: ^2.2.3
   provider: ^6.0.5
   uuid: ^4.1.0
-  flutter_lints: ^6.0.0
+  # keep runtime dependencies minimal here
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +50,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
