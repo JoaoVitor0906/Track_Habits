@@ -41,6 +41,10 @@ dependencies:
   uuid: ^4.1.0
   # keep runtime dependencies minimal here
 
+  path_provider: ^2.1.2
+  image_picker: ^1.0.7
+  flutter_image_compress: ^2.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
