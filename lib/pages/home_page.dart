@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/prefs_service.dart';
+import '../features/progress_overview/progress_overview.dart';
+import '../features/smart_suggestions/smart_suggestions_widget.dart';
+import '../widgets/app_drawer.dart';
+import '../repositories/profile_repository.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,18 +34,93 @@ class _HomePageState extends State<HomePage> {
     final prefs = Provider.of<PrefsService>(context, listen: false);
     final habits = _habits;
 
+    // Get the ProfileRepository provided in main.dart (if available)
+    ProfileRepository? profileRepository;
+    try {
+      profileRepository =
+          Provider.of<ProfileRepository>(context, listen: false);
+    } catch (_) {
+      profileRepository = null;
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Home'), actions: [
         IconButton(
             onPressed: () => Navigator.pushNamed(context, '/settings/privacy'),
             icon: const Icon(Icons.privacy_tip))
       ]),
+      // Use the full AppDrawer when ProfileRepository is available, otherwise
+      // fall back to a simple drawer.
+      drawer: profileRepository != null
+          ? AppDrawer(profileRepository: profileRepository)
+          : Drawer(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  DrawerHeader(
+                    decoration:
+                        BoxDecoration(color: Theme.of(context).primaryColor),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          child: Text(
+                            (prefs.getStringKey('userName') ?? 'U')
+                                .split(' ')
+                                .map((s) => s.isNotEmpty ? s[0] : '')
+                                .take(2)
+                                .join(),
+                            style: const TextStyle(
+                                fontSize: 20, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(prefs.getStringKey('userName') ?? 'Usuário',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: const Text('Perfil'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        // Use a ListView for the main content so the whole page scrolls and we avoid
+        // bottom overflow when there are many suggestion cards + content.
+        child: ListView(
           children: [
-            if (habits.isEmpty)
+            // Progresso (daily goals / summary)
+            ProgressOverview(total: habits.length, completedToday: 0),
+            const SizedBox(height: 12),
+            // Sugestões inteligentes (stub) — mostra sugestões mesmo sem hábitos
+            SmartSuggestionsWidget(
+              userName: prefs.getStringKey('userName'),
+              onAdd: (s) async {
+                await prefs.saveHabit({
+                  'title': s.title,
+                  'goal': s.description,
+                  'reminder': '',
+                  'enabled': true
+                });
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Hábito criado: ${s.title}')));
+                }
+                await _loadHabits();
+              },
+            ),
+            const SizedBox(height: 12),
+            if (habits.isEmpty) ...[
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -72,7 +151,8 @@ class _HomePageState extends State<HomePage> {
                               await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) => HabitDetailPage(habitId: id)));
+                                      builder: (_) =>
+                                          HabitDetailPage(habitId: id)));
                               if (mounted) await _loadHabits();
                             }
                           },
@@ -81,32 +161,30 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               )
-            else ...[
+            ] else ...[
               const Text('Seus hábitos:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                itemCount: habits.length,
-                itemBuilder: (ctx, i) {
-                final h = habits[i];
+              // Render each habit as a ListTile inside the outer ListView
+              ...habits.map((h) {
                 final id = h['id'] as String?;
                 return ListTile(
                   title: Text(h['title'] ?? '—'),
                   subtitle: Text(h['goal'] ?? ''),
                   onTap: id != null
-                    ? () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => HabitDetailPage(habitId: id)));
-                      if (mounted) await _loadHabits();
-                      }
-                    : null,
+                      ? () async {
+                          await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      HabitDetailPage(habitId: id)));
+                          if (mounted) await _loadHabits();
+                        }
+                      : null,
                   trailing: IconButton(
-                    icon: const Icon(Icons.check),
-                    onPressed: () {}));
-                }))
+                      icon: const Icon(Icons.check), onPressed: () {}),
+                );
+              }).toList(),
             ]
           ],
         ),
@@ -191,10 +269,15 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
         context: context,
         builder: (ctx) => AlertDialog(
               title: const Text('Excluir hábito?'),
-              content: const Text('Esta ação removerá o hábito permanentemente.'),
+              content:
+                  const Text('Esta ação removerá o hábito permanentemente.'),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Excluir'))
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancelar')),
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Excluir'))
               ],
             ));
     if (ok == true) {
@@ -211,17 +294,25 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
       appBar: AppBar(title: const Text('Detalhes do hábito')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          TextField(controller: _titleController, decoration: const InputDecoration(labelText: 'Título')),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Título')),
           const SizedBox(height: 12),
-          TextField(controller: _goalController, decoration: const InputDecoration(labelText: 'Meta')),
+          TextField(
+              controller: _goalController,
+              decoration: const InputDecoration(labelText: 'Meta')),
           const SizedBox(height: 12),
-          TextField(controller: _reminderController, decoration: const InputDecoration(labelText: 'Lembrete (HH:MM)')),
+          TextField(
+              controller: _reminderController,
+              decoration: const InputDecoration(labelText: 'Lembrete (HH:MM)')),
           const SizedBox(height: 12),
           Row(children: [
             const Text('Ativado'),
             const SizedBox(width: 12),
-            Switch(value: _enabled, onChanged: (v) => setState(() => _enabled = v))
+            Switch(
+                value: _enabled, onChanged: (v) => setState(() => _enabled = v))
           ]),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _save, child: const Text('Salvar')),

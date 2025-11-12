@@ -8,13 +8,28 @@ import 'pages/home_page.dart';
 import 'pages/create_habit_page.dart';
 import 'pages/settings_privacy_page.dart';
 import 'services/prefs_service.dart';
+import 'services/preferences_services.dart';
+import 'services/local_photo_store.dart';
+import 'repositories/profile_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final sp = await SharedPreferences.getInstance();
   final prefsService = PrefsService(sp);
-  runApp(Provider<PrefsService>.value(
-      value: prefsService, child: const TrackHabitsApp()));
+
+  // PreferencesService is used by ProfileRepository (photo storage, user info)
+  final preferencesService = PreferencesService(sp);
+  final localPhotoStore = LocalPhotoStore();
+  final profileRepository =
+      ProfileRepository(preferencesService, localPhotoStore);
+
+  runApp(MultiProvider(
+    providers: [
+      Provider<PrefsService>.value(value: prefsService),
+      Provider<ProfileRepository>.value(value: profileRepository),
+    ],
+    child: const TrackHabitsApp(),
+  ));
 }
 
 class TrackHabitsApp extends StatelessWidget {
@@ -59,4 +74,3 @@ class TrackHabitsApp extends StatelessWidget {
     );
   }
 }
- 

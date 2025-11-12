@@ -31,7 +31,8 @@ class UserAvatar extends StatelessWidget {
             // in that case, fall back to building the avatar directly.
             child: Builder(builder: (context) {
               try {
-                final dynamic notifier = (profileRepository as dynamic).photoVersion;
+                final dynamic notifier =
+                    (profileRepository as dynamic).photoVersion;
                 if (notifier is ValueListenable<int>) {
                   return ValueListenableBuilder<int>(
                     valueListenable: notifier,
@@ -85,7 +86,9 @@ class UserAvatar extends StatelessWidget {
             return FutureBuilder<Object?>(
               future: photoFuture,
               builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data == null || snapshot.hasError) {
+                if (!snapshot.hasData ||
+                    snapshot.data == null ||
+                    snapshot.hasError) {
                   return _buildInitialsAvatar(context);
                 }
 
@@ -109,7 +112,7 @@ class UserAvatar extends StatelessWidget {
                 } catch (e) {
                   // Fall through to initials on any error
                 }
-                
+
                 return _buildInitialsAvatar(context);
               },
             );
@@ -137,9 +140,12 @@ class UserAvatar extends StatelessWidget {
 
   Widget _buildEditButton(BuildContext context) {
     return Container(
+      // Use a contrasting background so the small edit button is visible over
+      // dark/primary headers (was blending into header color).
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
+        color: Theme.of(context).colorScheme.surface,
         shape: BoxShape.circle,
+        border: Border.all(color: Colors.black12),
       ),
       child: Material(
         color: Colors.transparent,
@@ -151,7 +157,7 @@ class UserAvatar extends StatelessWidget {
             child: Icon(
               Icons.edit,
               size: size * 0.25,
-              color: Colors.white,
+              color: Theme.of(context).primaryColor,
             ),
           ),
         ),
