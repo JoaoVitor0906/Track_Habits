@@ -10,7 +10,9 @@ class ProgressOverview extends StatelessWidget {
   final int total;
   final int completedToday;
 
-  const ProgressOverview({Key? key, required this.total, required this.completedToday}) : super(key: key);
+  const ProgressOverview(
+      {Key? key, required this.total, required this.completedToday})
+      : super(key: key);
 
   double get percentage => total == 0 ? 0.0 : (completedToday / total) * 100.0;
 
@@ -22,11 +24,13 @@ class ProgressOverview extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Progresso', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Progresso',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('${completedToday} de ${total} concluídos hoje'),
+            Text('$completedToday de $total concluídos hoje'),
             const SizedBox(height: 8),
-            LinearProgressIndicator(value: total == 0 ? 0.0 : completedToday / total),
+            LinearProgressIndicator(
+                value: total == 0 ? 0.0 : completedToday / total),
             const SizedBox(height: 8),
             Text('${percentage.toStringAsFixed(0)}%'),
           ],
