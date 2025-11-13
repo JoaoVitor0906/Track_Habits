@@ -100,7 +100,14 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           children: [
             // Progresso (daily goals / summary)
-            ProgressOverview(total: habits.length, completedToday: 0),
+            ProgressOverview(
+                total: habits.length,
+                completedToday: prefs.countHabitsDone(
+                    habits
+                        .map((h) => h['id'] as String? ?? '')
+                        .where((s) => s.isNotEmpty)
+                        .toList(),
+                    DateTime.now())),
             const SizedBox(height: 12),
             // Sugestões inteligentes (stub) — mostra sugestões mesmo sem hábitos
             SmartSuggestionsWidget(
@@ -168,9 +175,14 @@ class _HomePageState extends State<HomePage> {
               // Render each habit as a ListTile inside the outer ListView
               ...habits.map((h) {
                 final id = h['id'] as String?;
+                final title = h['title'] as String? ?? '—';
+                final goal = h['goal'] as String? ?? '';
+                final isDone =
+                    id != null ? prefs.isHabitDone(id, DateTime.now()) : false;
+
                 return ListTile(
-                  title: Text(h['title'] ?? '—'),
-                  subtitle: Text(h['goal'] ?? ''),
+                  title: Text(title),
+                  subtitle: Text(goal),
                   onTap: id != null
                       ? () async {
                           await Navigator.push(
@@ -182,7 +194,34 @@ class _HomePageState extends State<HomePage> {
                         }
                       : null,
                   trailing: IconButton(
-                      icon: const Icon(Icons.check), onPressed: () {}),
+                    icon: isDone
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : const Icon(Icons.check_box_outline_blank),
+                    onPressed: id == null
+                        ? null
+                        : () async {
+                            final currentlyDone =
+                                prefs.isHabitDone(id, DateTime.now());
+                            await prefs.setHabitDone(
+                                id, DateTime.now(), !currentlyDone);
+                            if (!currentlyDone) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                            Text('Hábito concluído: $title')));
+                              }
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Conclusão removida: $title')));
+                              }
+                            }
+                            setState(() {});
+                          },
+                  ),
                 );
               }).toList(),
             ]

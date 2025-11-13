@@ -109,6 +109,37 @@ class PrefsService {
 
   Future<void> clearHabits() async => await _prefs.remove(_habitsListKey);
 
+  // Habit completion tracking (per-day). Keys are: habit_done_<id>_<YYYY-MM-DD>
+  String _habitDoneKey(String id, DateTime date) {
+    final day = date.toIso8601String().split('T').first;
+    return 'habit_done_${id}_$day';
+  }
+
+  /// Mark or unmark a habit as done for a specific date (usually today).
+  Future<void> setHabitDone(String id, DateTime date, bool done) async {
+    final key = _habitDoneKey(id, date);
+    if (done) {
+      await _prefs.setBool(key, true);
+    } else {
+      await _prefs.remove(key);
+    }
+  }
+
+  /// Check if a habit is marked done for a specific date.
+  bool isHabitDone(String id, DateTime date) {
+    final key = _habitDoneKey(id, date);
+    return _prefs.getBool(key) == true;
+  }
+
+  /// Count how many habit ids from [ids] are marked done for [date].
+  int countHabitsDone(List<String> ids, DateTime date) {
+    var count = 0;
+    for (final id in ids) {
+      if (isHabitDone(id, date)) count++;
+    }
+    return count;
+  }
+
   // Generic getters/setters for tests and API completeness
   bool getBoolKey(String key) => _prefs.getBool(key) == true;
   Future<void> setBoolKey(String key, bool value) async =>
