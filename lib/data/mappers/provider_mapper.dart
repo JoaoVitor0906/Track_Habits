@@ -1,4 +1,4 @@
-import '../../domain/entities/provider.dart';
+import '../../domain/entities/provider_entities.dart';
 import '../dtos/provider_dto.dart';
 
 class ProviderMapper {
@@ -21,13 +21,13 @@ class ProviderMapper {
   }
 
   static ProviderDto toDto(Provider e) => ProviderDto(
-    id: e.id,
-    name: e.name,
-    image_url: e.imageUri?.toString(),
-    brand_color_hex: e.brandColorHex,
-    rating: e.rating,
-    distance_km: e.distanceKm,
-    metadata: {'tags': e.tags.toList(), 'featured': e.featured},
-    updated_at: e.updatedAt.toIso8601String(),
-  );
+        id: e.id,
+        name: e.name,
+        image_url: e.imageUri?.toString(),
+        brand_color_hex: e.brandColorHex,
+        rating: e.rating,
+        distance_km: e.distanceKm,
+        metadata: {'tags': e.tags.toList(), 'featured': e.featured},
+        updated_at: e.updatedAt.toIso8601String(),
+      );
 }

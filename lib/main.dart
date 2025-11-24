@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'pages/splash_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/consent_page.dart';
@@ -14,6 +16,29 @@ import 'repositories/profile_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  String supabaseUrl = 'https://elmuwyrkhlrlvbgbjhmi.supabase.co';
+  String supabaseAnonKey = 'sb_publishable_Idc_NraQ1FswWa49J_GHoQ_xsTTFy2d';
+
+  try {
+    await dotenv.load(fileName: '.env');
+    final envUrl = dotenv.env['SUPABASE_URL'];
+    final envKey = dotenv.env['SUPABASE_ANON_KEY'];
+    if (envUrl != null) supabaseUrl = envUrl;
+    if (envKey != null) supabaseAnonKey = envKey;
+  } catch (_) {
+    // Se .env não existir (ex: Flutter Web), use valores padrão
+    print('ATENÇÃO: Arquivo .env não encontrado, Usando valores padrão.');
+  }
+
+  // Inicializar Supabase com credenciais
+  await Supabase.initialize(
+    url: const String.fromEnvironment('SUPABASE_URL',
+        defaultValue: supabaseUrl),
+    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY',
+        defaultValue: supabaseAnonKey),
+  );
+
   final sp = await SharedPreferences.getInstance();
   final prefsService = PrefsService(sp);
 

@@ -140,6 +140,50 @@ class PrefsService {
     return count;
   }
 
+  // --- New API: per-habit numeric targets and daily instance counts ---
+
+  String _habitCountKey(String id, DateTime date) {
+    final day = date.toIso8601String().split('T').first;
+    return 'habit_count_${id}_$day';
+  }
+
+  /// Returns how many times the habit [id] was completed on [date].
+  int getHabitCount(String id, DateTime date) {
+    final key = _habitCountKey(id, date);
+    return _prefs.getInt(key) ?? 0;
+  }
+
+  /// Sets the exact count for a habit on a given date.
+  Future<void> setHabitCount(String id, DateTime date, int count) async {
+    final key = _habitCountKey(id, date);
+    if (count <= 0) {
+      await _prefs.remove(key);
+    } else {
+      await _prefs.setInt(key, count);
+    }
+  }
+
+  /// Increment (or decrement, if delta < 0) the habit count for [id] on [date].
+  Future<void> incrementHabitCount(String id, DateTime date, int delta) async {
+    final current = getHabitCount(id, date);
+    final next = (current + delta) < 0 ? 0 : (current + delta);
+    await setHabitCount(id, date, next);
+  }
+
+  /// Returns the total number of completed instances today across all given
+  /// habit ids, counting up to each habit's configured `target` (so if a habit
+  /// has target 3 and a user completed 4 times, it counts as 3 toward the total).
+  int countCompletedInstancesCapped(List<String> ids, DateTime date) {
+    var sum = 0;
+    for (final id in ids) {
+      final h = getHabit(id);
+      final target = (h != null) ? (h['target'] as int?) ?? 1 : 1;
+      final got = getHabitCount(id, date);
+      sum += (got <= target) ? got : target;
+    }
+    return sum;
+  }
+
   // Generic getters/setters for tests and API completeness
   bool getBoolKey(String key) => _prefs.getBool(key) == true;
   Future<void> setBoolKey(String key, bool value) async =>
@@ -149,6 +193,21 @@ class PrefsService {
       await _prefs.setString(key, value);
   Future<void> setString(String key, String value) async =>
       await setStringKey(key, value);
+
+  // Daily goals set by the user (number of goals to achieve daily)
+  static const String _dailyGoalCountKey = 'daily_goal_count';
+
+  /// Returns the user-configured daily goals count. If 0, app may fall back to
+  /// using the number of configured habits as implicit goal count.
+  int getDailyGoalCount() => _prefs.getInt(_dailyGoalCountKey) ?? 0;
+
+  Future<void> setDailyGoalCount(int count) async {
+    if (count <= 0) {
+      await _prefs.remove(_dailyGoalCountKey);
+    } else {
+      await _prefs.setInt(_dailyGoalCountKey, count);
+    }
+  }
 
   // Migrate policy version (simple invalidation)
   Future<void> migratePolicyVersion(String from, String to) async {

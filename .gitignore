@@ -9,6 +9,10 @@ build/
 .flutter-plugins-*
 pubspec.lock
 
+# Environment files (do not commit secrets)
+.env
+.env.*
+
 # VS Code
 .vscode/
 

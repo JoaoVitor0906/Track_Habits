@@ -28,7 +28,9 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
     // initialize read state from preferences
     final prefs = Provider.of<PrefsService>(context, listen: false);
     setState(() {
-      _isRead = widget.policyType == 'privacy' ? prefs.isPrivacyRead : prefs.isTermsRead;
+      _isRead = widget.policyType == 'privacy'
+          ? prefs.isPrivacyRead
+          : prefs.isTermsRead;
     });
   }
 
@@ -120,9 +122,9 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
                   onPressed: _isRead ? _markAsRead : null,
                   icon: const Icon(Icons.check),
                   style: ElevatedButton.styleFrom(
-            backgroundColor: _isRead ? const Color(0xFF059669) : null,
-            foregroundColor: _isRead ? Colors.white : null,
-                        minimumSize: const Size(double.infinity, 48)),
+                      backgroundColor: _isRead ? const Color(0xFF059669) : null,
+                      foregroundColor: _isRead ? Colors.white : null,
+                      minimumSize: const Size(double.infinity, 48)),
                   label: const Text('Marcar como lido'),
                 ),
               )
@@ -221,16 +223,18 @@ class _ConsentPageState extends State<ConsentPage> {
               onPressed: _canAccept
                   ? () async {
                       final navigator = Navigator.of(context);
-                      final prefs = Provider.of<PrefsService>(context, listen: false);
+                      final prefs =
+                          Provider.of<PrefsService>(context, listen: false);
                       await prefs.acceptPolicies();
                       if (!mounted) return;
+                      // After accepting policies, go to Home
                       navigator.pushReplacementNamed('/home');
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-          maximumSize: const Size(double.infinity, 48),
-          backgroundColor: _canAccept ? const Color(0xFF059669) : null,
-          foregroundColor: _canAccept ? Colors.white : null),
+                  maximumSize: const Size(double.infinity, 48),
+                  backgroundColor: _canAccept ? const Color(0xFF059669) : null,
+                  foregroundColor: _canAccept ? Colors.white : null),
               child: const Text('Aceitar e continuar'),
             ),
           ],
