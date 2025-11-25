@@ -17,26 +17,13 @@ import 'repositories/profile_repository.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  String supabaseUrl = 'https://elmuwyrkhlrlvbgbjhmi.supabase.co';
-  String supabaseAnonKey = 'sb_publishable_Idc_NraQ1FswWa49J_GHoQ_xsTTFy2d';
+  await dotenv.load(fileName: '.env');
 
-  try {
-    await dotenv.load(fileName: '.env');
-    final envUrl = dotenv.env['SUPABASE_URL'];
-    final envKey = dotenv.env['SUPABASE_ANON_KEY'];
-    if (envUrl != null) supabaseUrl = envUrl;
-    if (envKey != null) supabaseAnonKey = envKey;
-  } catch (_) {
-    // Se .env não existir (ex: Flutter Web), use valores padrão
-    print('ATENÇÃO: Arquivo .env não encontrado, Usando valores padrão.');
-  }
+  String supabaseUrl = dotenv.env['SUPABASE_URL']!;
+  String supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']!;
 
   // Inicializar Supabase com credenciais
   // Permitir substituição por variável em tempo de compilação via --dart-define
-  const compileTimeUrl = String.fromEnvironment('SUPABASE_URL');
-  const compileTimeKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  if (compileTimeUrl.isNotEmpty) supabaseUrl = compileTimeUrl;
-  if (compileTimeKey.isNotEmpty) supabaseAnonKey = compileTimeKey;
 
   await Supabase.initialize(
     url: supabaseUrl,
