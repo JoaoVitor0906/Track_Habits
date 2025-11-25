@@ -1,5 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/dtos/provider_dto.dart';
+import '../data/dtos/habit_completion_dto.dart';
+import '../data/mappers/habit_completion_mapper.dart';
+import '../domain/entities/habit_completion_entities.dart';
 
 /// Serviço para integração com Supabase
 /// Fornece métodos para operações CRUD com tabelas do backend
@@ -67,6 +70,28 @@ class SupabaseService {
     }
   }
 
+  /// Cria um hábito no Supabase (opcionalmente sincroniza dados locais com o servidor)
+  /// Retorna o mapa criado ou null
+  Future<Map<String, dynamic>?> createHabit(Map<String, dynamic> habit) async {
+    try {
+      final row = <String, dynamic>{
+        'title': habit['title'],
+        'goal': habit['goal'],
+        'reminder': habit['reminder'],
+        'enabled': habit['enabled'] == true,
+        'target': habit['target'] ?? 1,
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      final response = await _client.from('habits').insert(row).select();
+      if ((response as List).isEmpty) return null;
+      return Map<String, dynamic>.from(response.first);
+    } catch (e) {
+      print('❌ Erro ao criar habit no Supabase: $e');
+      return null;
+    }
+  }
+
   /// Atualiza um provider existente
   Future<bool> updateProvider({
     required int id,
@@ -107,43 +132,64 @@ class SupabaseService {
   /// Registra a conclusão de um hábito no dia atual
   Future<bool> recordHabitCompletion({
     required String userId,
-    required int habitId,
+    required String habitId,
   }) async {
     try {
-      final today = DateTime.now().toIso8601String().split('T').first;
+      final dto = await createHabitCompletion(
+        userId: userId,
+        habitId: habitId,
+        date: DateTime.now(),
+      );
 
-      await _client.from('habit_completions').insert({
-        'user_id': userId,
-        'habit_id': habitId,
-        'date': today,
-        'completed_at': DateTime.now().toIso8601String(),
-      });
-
-      return true;
+      return dto != null;
     } catch (e) {
       print('❌ Erro ao registrar conclusão de hábito: $e');
       return false;
     }
   }
 
+  /// Cria uma nova conclusão de hábito e retorna o DTO criado
+  Future<HabitCompletionDto?> createHabitCompletion({
+    required String userId,
+    required String habitId,
+    DateTime? date,
+  }) async {
+    try {
+      final today = (date ?? DateTime.now()).toIso8601String().split('T').first;
+
+      final response = await _client.from('habit_completions').insert({
+        'user_id': userId,
+        'habit_id': habitId,
+        'date': today,
+        'completed_at': DateTime.now().toIso8601String(),
+      }).select();
+
+      if ((response as List).isEmpty) return null;
+      return HabitCompletionDto.fromMap(response.first);
+    } catch (e) {
+      print('❌ Erro ao criar habit_completions: $e');
+      return null;
+    }
+  }
+
   /// Verifica se um hábito foi concluído em uma data específica
   Future<bool> isHabitCompletedOnDate({
     required String userId,
-    required int habitId,
+    required String habitId,
     required DateTime date,
   }) async {
     try {
       final dateStr = date.toIso8601String().split('T').first;
 
-      await _client
-          .from('habit_completions')
-          .select()
-          .eq('user_id', userId)
-          .eq('habit_id', habitId)
-          .eq('date', dateStr)
-          .single();
+        final response = await _client
+            .from('habit_completions')
+            .select()
+            .eq('user_id', userId)
+            .eq('habit_id', habitId)
+            .eq('date', dateStr);
 
-      return true;
+        final list = response as List<dynamic>;
+        return list.isNotEmpty;
     } catch (e) {
       // Registra esperado se nenhuma conclusão for encontrada
       return false;
@@ -164,6 +210,50 @@ class SupabaseService {
       print('❌ Erro ao buscar estatísticas: $e');
       return null;
     }
+  }
+
+  /// Busca as últimas conclusões de hábito para um usuário (opcionalmente por hábito)
+  Future<List<HabitCompletionDto>> fetchHabitCompletionsForUser({
+    required String userId,
+    String? habitId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    try {
+      var query = _client.from('habit_completions').select();
+
+      query = query.eq('user_id', userId);
+      if (habitId != null && habitId.isNotEmpty) {
+        query = query.eq('habit_id', habitId);
+      }
+
+      final response = await query.range(offset, offset + limit - 1);
+
+      final list = (response as List)
+          .map((item) => HabitCompletionDto.fromMap(item as Map<String, dynamic>))
+          .toList();
+
+      return list;
+    } catch (e) {
+      print('❌ Erro ao buscar habit_completions: $e');
+      return [];
+    }
+  }
+
+  /// Retorna entidades de domínio (HabitCompletion) para facilitar uso na UI
+  Future<List<HabitCompletion>> fetchHabitCompletionsEntitiesForUser({
+    required String userId,
+    String? habitId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final dtos = await fetchHabitCompletionsForUser(
+      userId: userId,
+      habitId: habitId,
+      limit: limit,
+      offset: offset,
+    );
+    return dtos.map((d) => HabitCompletionMapper.toEntity(d)).toList();
   }
 
   /// Subscribe a mudanças em tempo real em uma tabela

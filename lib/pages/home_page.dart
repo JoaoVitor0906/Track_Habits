@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/prefs_service.dart';
+import '../services/supabase_service.dart';
 import '../features/progress_overview/progress_overview.dart';
 import '../features/smart_suggestions/smart_suggestions_widget.dart';
 import '../widgets/app_drawer.dart';
@@ -95,7 +96,7 @@ class _HomePageState extends State<HomePage> {
                           if (mounted) await _loadHabits();
                         },
                       );
-                    }).toList(),
+                    }),
                   ],
                 );
               },
@@ -221,8 +222,22 @@ class _HomePageState extends State<HomePage> {
                   onPressed: current >= target
                       ? null
                       : () async {
-                          await prefs.incrementHabitCount(
-                              nid, DateTime.now(), 1);
+                          // If this is the first increment from 0 -> 1, record completion to Supabase
+                          final before = prefs.getHabitCount(nid, DateTime.now());
+                          await prefs.incrementHabitCount(nid, DateTime.now(), 1);
+                          final after = prefs.getHabitCount(nid, DateTime.now());
+                          if (before == 0 && after > 0) {
+                            try {
+                              final sup = SupabaseService();
+                              final userId = sup.getCurrentUser()?.id;
+                              if (userId != null) {
+                                await sup.recordHabitCompletion(
+                                    userId: userId, habitId: nid);
+                              }
+                            } catch (_) {
+                              // ignore: keep local-first behavior
+                            }
+                          }
                           if (mounted) setState(() {});
                         }),
             ]),

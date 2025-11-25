@@ -32,11 +32,15 @@ Future<void> main() async {
   }
 
   // Inicializar Supabase com credenciais
+  // Permitir substituição por variável em tempo de compilação via --dart-define
+  const compileTimeUrl = String.fromEnvironment('SUPABASE_URL');
+  const compileTimeKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  if (compileTimeUrl.isNotEmpty) supabaseUrl = compileTimeUrl;
+  if (compileTimeKey.isNotEmpty) supabaseAnonKey = compileTimeKey;
+
   await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL',
-        defaultValue: supabaseUrl),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY',
-        defaultValue: supabaseAnonKey),
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
 
   final sp = await SharedPreferences.getInstance();

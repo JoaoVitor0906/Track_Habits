@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/prefs_service.dart';
+import '../services/supabase_service.dart';
 
 class CreateHabitPage extends StatefulWidget {
   const CreateHabitPage({super.key});
@@ -66,11 +67,25 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
                   'title': title,
                   'goal': goal,
                   'reminder': reminder,
-                  'enabled': _enabled
+                  'enabled': _enabled,
+                  'target': 1,
                 });
+                // Try to create on Supabase as well (if authenticated)
+                try {
+                  final sup = SupabaseService();
+                  await sup.createHabit({
+                    'title': title,
+                    'goal': goal,
+                    'reminder': reminder,
+                    'enabled': _enabled,
+                    'target': 1,
+                  });
+                } catch (_) {
+                  // ignore errors: offline/local-first behavior
+                }
                 await prefs.setBoolKey('first_habit_created', true);
                 await prefs.setStringKey('first_habit_id', id);
-                if (context.mounted) Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context, id);
               },
               child: const Text('Criar'))
         ]),
