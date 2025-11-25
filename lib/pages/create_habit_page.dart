@@ -31,7 +31,8 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
       appBar: AppBar(title: const Text('Criar hábito')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           TextField(
             controller: _titleController,
             decoration: const InputDecoration(labelText: 'Título'),
@@ -50,7 +51,8 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
           Row(children: [
             const Text('Ativado'),
             const SizedBox(width: 12),
-            Switch(value: _enabled, onChanged: (v) => setState(() => _enabled = v))
+            Switch(
+                value: _enabled, onChanged: (v) => setState(() => _enabled = v))
           ]),
           const SizedBox(height: 12),
           ElevatedButton(
@@ -64,23 +66,19 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
                   return;
                 }
                 final id = await prefs.saveHabit({
-                  'title': title,
-                  'goal': goal,
-                  'reminder': reminder,
-                  'enabled': _enabled,
-                  'target': 1,
+                  'description': title,
+                  'frequence_type': goal,
+                  'target_count': 1,
                 });
                 // Try to create on Supabase as well (if authenticated)
                 try {
                   final sup = SupabaseService();
                   await sup.createHabit({
-                    'title': title,
-                    'goal': goal,
-                    'reminder': reminder,
-                    'enabled': _enabled,
-                    'target': 1,
+                    'description': title,
+                    'frequence_type': goal,
+                    'target_count': 1,
                   });
-                } catch (_) {
+                } catch (e) {
                   // ignore errors: offline/local-first behavior
                 }
                 await prefs.setBoolKey('first_habit_created', true);
