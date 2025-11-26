@@ -8,12 +8,12 @@ class HabitDto {
   final String? createdAt; // Data como String (ISO 8601)
 
   HabitDto({
-    this.id,
-    this.title,
-    this.description,
-    this.frequencyType,
-    this.targetCount,
-    this.createdAt,
+   required this.id,
+   required this.title,
+   required this.description,
+   required this.frequencyType,
+   required this.targetCount,
+   required this.createdAt,
   });
 
   factory HabitDto.fromJson(Map<String, dynamic> json) {
@@ -34,7 +34,6 @@ class HabitDto {
       'description': description,
       'frequency_type': frequencyType,
       'target_count': targetCount,
-      // Não enviamos created_at (o banco gera) nem id (se for novo)
     };
     if (id != null) map['id'] = id;
     return map;
