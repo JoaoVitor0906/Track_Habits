@@ -75,11 +75,27 @@ class SupabaseService {
   Future<Map<String, dynamic>?> createHabit(Map<String, dynamic> habit) async {
     try {
       final row = <String, dynamic>{
-        'title': habit['title'],
-        'goal': habit['goal'],
-        'reminder': habit['reminder'],
-        'enabled': habit['enabled'] == true,
-        'target': habit['target'] ?? 1,
+        // Ensure we always send `title` (DB has NOT NULL constraint)
+        'title': habit['title'] ?? habit['description'] ?? '',
+
+        // Also send description when provided
+        if (habit.containsKey('description'))
+          'description': habit['description']
+        else if (habit.containsKey('title'))
+          'description': habit['title'],
+
+        if (habit.containsKey('frequence_type'))
+          'frequency_type': habit['frequence_type']
+        else if (habit.containsKey('goal'))
+          'frequency_type': habit['goal'],
+
+        // Use the column name present in your table
+        'target_count': habit['target_count'] ?? habit['target'] ?? 1,
+
+        // Note: do not send optional UI-only fields (like `reminder` or
+        // `enabled`) unless your Supabase `habits` table actually has those
+        // columns. Sending unknown columns causes PostgREST PGRST204 errors.
+
         'created_at': DateTime.now().toIso8601String(),
       };
 
@@ -181,15 +197,15 @@ class SupabaseService {
     try {
       final dateStr = date.toIso8601String().split('T').first;
 
-        final response = await _client
-            .from('habit_completions')
-            .select()
-            .eq('user_id', userId)
-            .eq('habit_id', habitId)
-            .eq('date', dateStr);
+      final response = await _client
+          .from('habit_completions')
+          .select()
+          .eq('user_id', userId)
+          .eq('habit_id', habitId)
+          .eq('date', dateStr);
 
-        final list = response as List<dynamic>;
-        return list.isNotEmpty;
+      final list = response as List<dynamic>;
+      return list.isNotEmpty;
     } catch (e) {
       // Registra esperado se nenhuma conclusão for encontrada
       return false;
@@ -230,7 +246,8 @@ class SupabaseService {
       final response = await query.range(offset, offset + limit - 1);
 
       final list = (response as List)
-          .map((item) => HabitCompletionDto.fromMap(item as Map<String, dynamic>))
+          .map((item) =>
+              HabitCompletionDto.fromMap(item as Map<String, dynamic>))
           .toList();
 
       return list;

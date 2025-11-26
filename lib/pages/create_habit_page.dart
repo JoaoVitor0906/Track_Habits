@@ -66,17 +66,21 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
                   return;
                 }
                 final id = await prefs.saveHabit({
-                  'description': title,
-                  'frequence_type': goal,
-                  'target_count': 1,
+                  'title': title,
+                  'goal': goal,
+                  'reminder': reminder,
+                  'enabled': _enabled,
+                  'target': 1,
                 });
                 // Try to create on Supabase as well (if authenticated)
                 try {
                   final sup = SupabaseService();
                   await sup.createHabit({
-                    'description': title,
-                    'frequence_type': goal,
-                    'target_count': 1,
+                    'title': title,
+                    'goal': goal,
+                    'reminder': reminder,
+                    'enabled': _enabled,
+                    'target': 1,
                   });
                 } catch (e) {
                   // ignore errors: offline/local-first behavior

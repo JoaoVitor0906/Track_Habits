@@ -223,9 +223,12 @@ class _HomePageState extends State<HomePage> {
                       ? null
                       : () async {
                           // If this is the first increment from 0 -> 1, record completion to Supabase
-                          final before = prefs.getHabitCount(nid, DateTime.now());
-                          await prefs.incrementHabitCount(nid, DateTime.now(), 1);
-                          final after = prefs.getHabitCount(nid, DateTime.now());
+                          final before =
+                              prefs.getHabitCount(nid, DateTime.now());
+                          await prefs.incrementHabitCount(
+                              nid, DateTime.now(), 1);
+                          final after =
+                              prefs.getHabitCount(nid, DateTime.now());
                           if (before == 0 && after > 0) {
                             try {
                               final sup = SupabaseService();
@@ -288,7 +291,10 @@ class _HomePageState extends State<HomePage> {
       body: Padding(
           padding: const EdgeInsets.all(16), child: ListView(children: items)),
       floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.pushNamed(context, '/create-habit'),
+          onPressed: () async {
+            await Navigator.pushNamed(context, '/create-habit');
+            if (mounted) await _loadHabits();
+          },
           child: const Icon(Icons.add)),
     );
   }
