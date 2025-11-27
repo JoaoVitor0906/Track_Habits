@@ -21,6 +21,15 @@ class AppDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           _buildDrawerHeader(context),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Histórico'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/history');
+            },
+          ),
+          const Divider(),
           // Outros itens do drawer podem ser adicionados aqui
         ],
       ),
@@ -88,12 +97,14 @@ class AppDrawer extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Escolher da galeria'),
-                onTap: () => _handleImageSelection(context, ImageSource.gallery),
+                onTap: () =>
+                    _handleImageSelection(context, ImageSource.gallery),
               ),
               if (profileRepository.hasPhoto())
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text('Remover foto', style: TextStyle(color: Colors.red)),
+                  title: const Text('Remover foto',
+                      style: TextStyle(color: Colors.red)),
                   onTap: () => _handlePhotoRemoval(context),
                 ),
             ],
@@ -106,7 +117,7 @@ class AppDrawer extends StatelessWidget {
   Future<void> _handleImageSelection(
       BuildContext context, ImageSource source) async {
     late final Object? imageData;
-    
+
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
@@ -142,7 +153,7 @@ class AppDrawer extends StatelessWidget {
 
     if (!context.mounted) return;
     Navigator.pop(context);
-    
+
     if (imageData != null) {
       await _showImagePreview(context, imageData);
     }

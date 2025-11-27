@@ -219,6 +219,35 @@ class PrefsService {
       await _prefs.remove(_acceptedAtKey);
     }
   }
+
+  // --- Completion history (list of completed habit events) ---
+  static const String _habitCompletionHistoryKey = 'habit_completion_history';
+
+  /// Adds a completion record for a habit with timestamp. Newest entries are
+  /// stored first.
+  Future<void> addCompletionRecord(
+      String habitId, String? title, DateTime at) async {
+    final list = _prefs.getStringList(_habitCompletionHistoryKey) ?? [];
+    final entry = jsonEncode({
+      'habit_id': habitId,
+      'title': title ?? '',
+      'completed_at': at.toIso8601String(),
+    });
+    list.insert(0, entry);
+    await _prefs.setStringList(_habitCompletionHistoryKey, list);
+  }
+
+  /// Returns completion history as a list of maps sorted newest-first.
+  List<Map<String, dynamic>> getCompletionHistory() {
+    final list = _prefs.getStringList(_habitCompletionHistoryKey) ?? [];
+    return list
+        .map((e) => Map<String, dynamic>.from(jsonDecode(e) as Map))
+        .toList();
+  }
+
+  /// Clears the stored completion history.
+  Future<void> clearCompletionHistory() async =>
+      await _prefs.remove(_habitCompletionHistoryKey);
 }
 
 class HabitService {
