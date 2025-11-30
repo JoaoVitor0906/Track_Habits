@@ -1,4 +1,4 @@
-// data/dtos/habit_dto.dart
+// data/models/habit_dto.dart
 class HabitDto {
   final String? id; // Pode ser nulo antes de salvar
   final String? title;
@@ -28,7 +28,6 @@ class HabitDto {
   }
 
   Map<String, dynamic> toJson() {
-    // Removemos chaves com valores nulos para evitar erro de insert parcial se necessário
     final map = <String, dynamic>{
       'title': title,
       'description': description,

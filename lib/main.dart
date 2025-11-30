@@ -13,7 +13,8 @@ import 'features/providers/presentation/providers_page.dart';
 import 'services/prefs_service.dart';
 import 'services/preferences_services.dart';
 import 'services/local_photo_store.dart';
-import 'repositories/profile_repository.dart';
+import 'domain/repositories/profile_repository.dart';
+import 'data/repositories/profile_repository_impl.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,11 +38,11 @@ Future<void> main() async {
   // PreferencesService is used by ProfileRepository (photo storage, user info)
   final preferencesService = PreferencesService(sp);
   final localPhotoStore = LocalPhotoStore();
-  final profileRepository =
-      ProfileRepository(preferencesService, localPhotoStore);
+    final profileRepository =
+      ProfileRepositoryImpl(preferencesService, localPhotoStore);
 
   runApp(MultiProvider(
-    providers: [
+      providers: [
       Provider<PrefsService>.value(value: prefsService),
       Provider<ProfileRepository>.value(value: profileRepository),
     ],

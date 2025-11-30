@@ -5,7 +5,7 @@ import '../services/supabase_service.dart';
 import '../features/progress_overview/progress_overview.dart';
 import '../features/smart_suggestions/smart_suggestions_widget.dart';
 import '../widgets/app_drawer.dart';
-import '../repositories/profile_repository.dart';
+import '../domain/repositories/profile_repository.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

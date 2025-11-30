@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../repositories/profile_repository.dart';
+import '../domain/repositories/profile_repository.dart';
 import '../widgets/user_avatar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;

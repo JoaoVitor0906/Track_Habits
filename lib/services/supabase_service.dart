@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../data/dtos/provider_dto.dart';
-import '../data/dtos/habit_completion_dto.dart';
+import '../data/models/provider_dto.dart';
+import '../data/models/habit_completion_dto.dart';
 import '../data/mappers/habit_completion_mapper.dart';
 import '../domain/entities/habit_completion_entities.dart';
 

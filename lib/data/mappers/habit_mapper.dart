@@ -1,6 +1,6 @@
-// domain/mappers/habit_mapper.dart
-import 'package:flutter_application_1/data/dtos/habit_dto.dart';
-import 'package:flutter_application_1/domain/entities/habit_entities.dart';
+// data/mappers/habit_mapper.dart
+import '../models/habit_dto.dart';
+import '../../domain/entities/habit_entities.dart';
 
 class HabitMapper {
   static Habit toEntity(HabitDto dto) {

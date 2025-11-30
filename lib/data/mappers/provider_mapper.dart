@@ -1,5 +1,5 @@
 import '../../domain/entities/provider_entities.dart';
-import '../dtos/provider_dto.dart';
+import '../models/provider_dto.dart';
 
 class ProviderMapper {
   static Provider toEntity(ProviderDto d) {

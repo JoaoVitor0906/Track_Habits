@@ -2,7 +2,7 @@ import 'dart:io' show File;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
-import '../repositories/profile_repository.dart';
+import '../domain/repositories/profile_repository.dart';
 
 class UserAvatar extends StatelessWidget {
   final double size;

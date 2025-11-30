@@ -1,6 +1,6 @@
 // data/mappers/habit_completion_mapper.dart
-import 'package:flutter_application_1/data/dtos/habit_completion_dto.dart';
-import 'package:flutter_application_1/domain/entities/habit_completion_entities.dart';
+import '../models/habit_completion_dto.dart';
+import '../../domain/entities/habit_completion_entities.dart';
 
 class HabitCompletionMapper {
   static HabitCompletion toEntity(HabitCompletionDto dto) {
