@@ -1,3 +1,5 @@
+export '../models/provider_dto.dart';
+
 class ProviderDto {
   final int id;
   final String name;

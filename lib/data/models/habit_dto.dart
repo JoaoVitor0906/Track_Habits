@@ -1,4 +1,5 @@
-// data/models/habit_dto.dart
+export '../models/habit_dto.dart';
+
 class HabitDto {
   final String? id; // Pode ser nulo antes de salvar
   final String? title;

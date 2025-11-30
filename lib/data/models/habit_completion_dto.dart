@@ -1,4 +1,4 @@
-// data/models/habit_completion_dto.dart
+export '../models/habit_completion_dto.dart';
 
 class HabitCompletionDto {
   final String? id;
