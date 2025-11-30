@@ -16,6 +16,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _habits = [];
+  bool _showPendingOnly = false;
 
   Future<void> _loadHabits() async {
     final prefs = Provider.of<PrefsService>(context, listen: false);
@@ -111,6 +112,16 @@ class _HomePageState extends State<HomePage> {
 
     items.add(const SizedBox(height: 12));
 
+    // Toggle to show only pending habits
+    items.add(Row(children: [
+      const Text('Mostrar apenas pendentes'),
+      const SizedBox(width: 8),
+      Switch(
+          value: _showPendingOnly,
+          onChanged: (v) => setState(() => _showPendingOnly = v)),
+    ]));
+    items.add(const SizedBox(height: 12));
+
     items.add(SmartSuggestionsWidget(
       userName: prefs.getStringKey('userName'),
       onAdd: (s) async {
@@ -172,7 +183,17 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)));
       items.add(const SizedBox(height: 12));
 
-      for (final h in habits) {
+      final visibleHabits = _showPendingOnly
+          ? habits.where((h) {
+              final id = h['id'] as String?;
+              if (id == null) return false;
+              final target = (h['target'] as int?) ?? 1;
+              final current = prefs.getHabitCount(id, DateTime.now());
+              return current < target;
+            }).toList()
+          : habits;
+
+      for (final h in visibleHabits) {
         final id = h['id'] as String?;
         final title = h['title'] as String? ?? '—';
         final goal = h['goal'] as String? ?? '';
@@ -239,6 +260,13 @@ class _HomePageState extends State<HomePage> {
                               }
                             } catch (_) {
                               // ignore: keep local-first behavior
+                            }
+                            // Record local completion event (with timestamp)
+                            try {
+                              await prefs.addCompletionRecord(
+                                  nid, title, DateTime.now());
+                            } catch (_) {
+                              // ignore storage failures
                             }
                           }
                           if (mounted) setState(() {});

@@ -40,7 +40,8 @@ class ProviderListItem extends StatelessWidget {
                   return SizedBox(
                     width: 56,
                     height: 56,
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) => Container(
@@ -60,7 +61,8 @@ class ProviderListItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (taxIdMasked != null) Text(taxIdMasked!),
-          if (contact != null && (contact!['phone'] != null || contact!['email'] != null))
+          if (contact != null &&
+              (contact!['phone'] != null || contact!['email'] != null))
             Text(
               '${contact!['phone'] ?? ''}${(contact!['phone'] != null && contact!['email'] != null) ? ' • ' : ''}${contact!['email'] ?? ''}',
               style: TextStyle(fontSize: 12),
@@ -82,7 +84,8 @@ class ProviderListItem extends StatelessWidget {
                     Text(rating!.toStringAsFixed(1)),
                   ],
                 ),
-              if (distanceKm != null) Text('${distanceKm!.toStringAsFixed(1)} km'),
+              if (distanceKm != null)
+                Text('${distanceKm!.toStringAsFixed(1)} km'),
             ],
           ),
           const SizedBox(width: 8),
@@ -95,9 +98,7 @@ class ProviderListItem extends StatelessWidget {
             ),
         ],
       ),
-      onTap: () {
-        // TODO: abrir detalhes ou ações (implementar separadamente)
-      },
+      onTap: () {},
       onLongPress: onLongPress,
     );
   }
