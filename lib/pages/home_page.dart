@@ -88,8 +88,8 @@ class _HomePageState extends State<HomePage> {
                         trailing: const Icon(Icons.edit),
                         onTap: () async {
                           Navigator.pop(ctx);
-                          await Navigator.push(
-                            context,
+                          final navigator = Navigator.of(context);
+                          await navigator.push(
                             MaterialPageRoute(
                               builder: (_) => HabitDetailPage(habitId: id),
                             ),
@@ -103,7 +103,8 @@ class _HomePageState extends State<HomePage> {
               },
             );
           } else {
-            await Navigator.pushNamed(context, '/create-habit');
+            final navigator = Navigator.of(context);
+            await navigator.pushNamed('/create-habit');
             if (mounted) await _loadHabits();
           }
         },
@@ -125,6 +126,7 @@ class _HomePageState extends State<HomePage> {
     items.add(SmartSuggestionsWidget(
       userName: prefs.getStringKey('userName'),
       onAdd: (s) async {
+        final messenger = ScaffoldMessenger.of(context);
         await prefs.saveHabit({
           'title': s.title,
           'goal': s.description,
@@ -133,7 +135,7 @@ class _HomePageState extends State<HomePage> {
           'target': 1
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
               SnackBar(content: Text('Hábito criado: ${s.title}')));
         }
         await _loadHabits();
@@ -155,6 +157,8 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 12),
             ElevatedButton(
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
                   final id = await prefs.saveHabit({
                     'title': 'Beber água',
                     'goal': '3 copos/dia',
@@ -165,12 +169,10 @@ class _HomePageState extends State<HomePage> {
                   await prefs.setBoolKey('first_habit_created', true);
                   await prefs.setStringKey('first_habit_id', id);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    messenger.showSnackBar(const SnackBar(
                         content: Text('Hábito criado: Beber água')));
-                    await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => HabitDetailPage(habitId: id)));
+                    await navigator.push(MaterialPageRoute(
+                        builder: (_) => HabitDetailPage(habitId: id)));
                     if (mounted) await _loadHabits();
                   }
                 },
@@ -215,10 +217,9 @@ class _HomePageState extends State<HomePage> {
           title: Text(title),
           subtitle: Text(goal),
           onTap: () async {
-            await Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => HabitDetailPage(habitId: nid)));
+            final navigator = Navigator.of(context);
+            await navigator.push(MaterialPageRoute(
+                builder: (_) => HabitDetailPage(habitId: nid)));
             if (mounted) await _loadHabits();
           },
           trailing: SizedBox(
@@ -320,7 +321,8 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(16), child: ListView(children: items)),
       floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            await Navigator.pushNamed(context, '/create-habit');
+            final navigator = Navigator.of(context);
+            await navigator.pushNamed('/create-habit');
             if (mounted) await _loadHabits();
           },
           child: const Icon(Icons.add)),

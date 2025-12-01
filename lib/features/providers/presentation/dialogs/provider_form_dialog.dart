@@ -5,34 +5,58 @@ Future<Map<String, dynamic>?> showProviderFormDialog(
   BuildContext context, {
   required Map<String, dynamic> initial,
 }) {
-  final _formKey = GlobalKey<FormState>();
+  final formKey = GlobalKey<FormState>();
 
-  final nameCtrl = TextEditingController(text: initial['name'] as String? ?? '');
-  final taxIdCtrl = TextEditingController(text: initial['taxId'] as String? ?? '');
-  final imageCtrl = TextEditingController(text: initial['image_url'] as String? ?? '');
-  final emailCtrl = TextEditingController(text: (initial['contact'] as Map<String,dynamic>?)?['email'] as String? ?? '');
-  final phoneCtrl = TextEditingController(text: (initial['contact'] as Map<String,dynamic>?)?['phone'] as String? ?? '');
-  final streetCtrl = TextEditingController(text: (initial['address'] as Map<String,dynamic>?)?['street'] as String? ?? '');
-  final cityCtrl = TextEditingController(text: (initial['address'] as Map<String,dynamic>?)?['city'] as String? ?? '');
-  final stateCtrl = TextEditingController(text: (initial['address'] as Map<String,dynamic>?)?['state'] as String? ?? '');
-  final zipCtrl = TextEditingController(text: (initial['address'] as Map<String,dynamic>?)?['zip'] as String? ?? '');
+  final nameCtrl =
+      TextEditingController(text: initial['name'] as String? ?? '');
+  final taxIdCtrl =
+      TextEditingController(text: initial['taxId'] as String? ?? '');
+  final imageCtrl =
+      TextEditingController(text: initial['image_url'] as String? ?? '');
+  final emailCtrl = TextEditingController(
+      text:
+          (initial['contact'] as Map<String, dynamic>?)?['email'] as String? ??
+              '');
+  final phoneCtrl = TextEditingController(
+      text:
+          (initial['contact'] as Map<String, dynamic>?)?['phone'] as String? ??
+              '');
+  final streetCtrl = TextEditingController(
+      text:
+          (initial['address'] as Map<String, dynamic>?)?['street'] as String? ??
+              '');
+  final cityCtrl = TextEditingController(
+      text: (initial['address'] as Map<String, dynamic>?)?['city'] as String? ??
+          '');
+  final stateCtrl = TextEditingController(
+      text:
+          (initial['address'] as Map<String, dynamic>?)?['state'] as String? ??
+              '');
+  final zipCtrl = TextEditingController(
+      text: (initial['address'] as Map<String, dynamic>?)?['zip'] as String? ??
+          '');
 
   return showDialog<Map<String, dynamic>>(
     context: context,
     barrierDismissible: false,
     builder: (context) {
       return AlertDialog(
-        title: Text(initial['name'] != null && (initial['name'] as String).isNotEmpty ? 'Editar fornecedor' : 'Novo fornecedor'),
+        title: Text(
+            initial['name'] != null && (initial['name'] as String).isNotEmpty
+                ? 'Editar fornecedor'
+                : 'Novo fornecedor'),
         content: SingleChildScrollView(
           child: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextFormField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(labelText: 'Nome'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Nome é obrigatório' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Nome é obrigatório'
+                      : null,
                 ),
                 TextFormField(
                   controller: taxIdCtrl,
@@ -43,7 +67,8 @@ Future<Map<String, dynamic>?> showProviderFormDialog(
                   decoration: const InputDecoration(labelText: 'URL da imagem'),
                 ),
                 const SizedBox(height: 8),
-                const Text('Contato', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text('Contato',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
                 TextFormField(
                   controller: emailCtrl,
                   decoration: const InputDecoration(labelText: 'Email'),
@@ -53,7 +78,8 @@ Future<Map<String, dynamic>?> showProviderFormDialog(
                   decoration: const InputDecoration(labelText: 'Telefone'),
                 ),
                 const SizedBox(height: 8),
-                const Text('Endereço', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text('Endereço',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
                 TextFormField(
                   controller: streetCtrl,
                   decoration: const InputDecoration(labelText: 'Rua'),
@@ -81,7 +107,7 @@ Future<Map<String, dynamic>?> showProviderFormDialog(
           ),
           TextButton(
             onPressed: () {
-              if (_formKey.currentState?.validate() != true) return;
+              if (formKey.currentState?.validate() != true) return;
               final updated = Map<String, dynamic>.from(initial);
               updated['name'] = nameCtrl.text.trim();
               updated['taxId'] = taxIdCtrl.text.trim();

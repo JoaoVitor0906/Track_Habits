@@ -14,20 +14,24 @@ Future<void> showProviderActionsDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) {
+      final messenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
       return AlertDialog(
         title: Text('Ações — $name'),
         content: Text('Escolha uma ação para este fornecedor.'),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              navigator.pop();
               try {
                 onEdit();
               } catch (e) {
                 // ignore: avoid_print
                 print('Erro ao chamar onEdit: $e');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Não foi possível abrir o formulário de edição.')),
+                messenger.showSnackBar(
+                  const SnackBar(
+                      content: Text(
+                          'Não foi possível abrir o formulário de edição.')),
                 );
               }
             },
@@ -36,12 +40,15 @@ Future<void> showProviderActionsDialog(
           TextButton(
             onPressed: () async {
               // Abrir confirmação (não-dismissable)
+              final messenger = ScaffoldMessenger.of(context);
+
               final confirm = await showDialog<bool>(
                 context: context,
                 barrierDismissible: false,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Confirmar remoção'),
-                  content: Text('Remover "$name"? Esta ação não pode ser desfeita.'),
+                  content:
+                      Text('Remover "$name"? Esta ação não pode ser desfeita.'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
@@ -56,16 +63,17 @@ Future<void> showProviderActionsDialog(
               );
 
               if (confirm == true) {
-                Navigator.of(context).pop(); // fechar diálogo de ações
+                navigator.pop(); // fechar diálogo de ações
                 try {
                   await onRemove();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Fornecedor removido com sucesso.')),
+                  messenger.showSnackBar(
+                    const SnackBar(
+                        content: Text('Fornecedor removido com sucesso.')),
                   );
                 } catch (e) {
                   // ignore: avoid_print
                   print('Erro ao remover provider: $e');
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text('Erro ao remover fornecedor: $e')),
                   );
                 }

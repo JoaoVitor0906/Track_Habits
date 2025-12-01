@@ -27,8 +27,7 @@ class HistoryPage extends StatelessWidget {
                 } catch (_) {
                   at = null;
                 }
-                final subtitle =
-                    at != null ? '${at.toLocal().toString()}' : atRaw;
+                final subtitle = at != null ? at.toLocal().toString() : atRaw;
                 return ListTile(
                   title: Text(title),
                   subtitle: Text(subtitle),

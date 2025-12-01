@@ -28,6 +28,7 @@ class _ProvidersPageState extends State<ProvidersPage> {
 
   Future<void> _initDaoAndLoad() async {
     setState(() => _loading = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final sp = await SharedPreferences.getInstance();
       _dao = ProvidersLocalDaoSharedPrefs(sp);
@@ -35,35 +36,37 @@ class _ProvidersPageState extends State<ProvidersPage> {
     } catch (e) {
       // ignore: avoid_print
       print('ProvidersPage init error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao inicializar a listagem: $e')),
-        );
-      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('Erro ao inicializar a listagem: $e')),
+      );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   Future<void> _loadItems() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final list = await _dao.listAll();
       setState(() => _items = list);
     } catch (e) {
       // ignore: avoid_print
       print('ProvidersPage load error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao carregar provedores: $e')),
-        );
-      }
+      messenger.showSnackBar(
+        SnackBar(content: Text('Erro ao carregar provedores: $e')),
+      );
     }
   }
 
   String _maskTaxId(String? taxId) {
     if (taxId == null || taxId.isEmpty) return '';
     // Simple mask: keep first 6 and last 3 chars visible
-    if (taxId.length <= 9) return '${taxId.substring(0, 3)}***${taxId.substring(taxId.length - 3)}';
+    if (taxId.length <= 9) {
+      return '${taxId.substring(0, 3)}***${taxId.substring(taxId.length - 3)}';
+    }
+
     return '${taxId.substring(0, 6)}***${taxId.substring(taxId.length - 3)}';
   }
 
@@ -79,10 +82,15 @@ class _ProvidersPageState extends State<ProvidersPage> {
                   itemCount: _items.length,
                   itemBuilder: (context, index) {
                     final it = _items[index];
+                    final messenger = ScaffoldMessenger.of(context);
                     final id = it['id'] as String? ?? '';
                     final name = it['name'] as String? ?? '';
-                    final rating = (it['rating'] is num) ? (it['rating'] as num).toDouble() : null;
-                    final distanceKm = (it['distance_km'] is num) ? (it['distance_km'] as num).toDouble() : null;
+                    final rating = (it['rating'] is num)
+                        ? (it['rating'] as num).toDouble()
+                        : null;
+                    final distanceKm = (it['distance_km'] is num)
+                        ? (it['distance_km'] as num).toDouble()
+                        : null;
                     final imageUrl = it['image_url'] as String?;
                     final taxId = _maskTaxId(it['taxId'] as String?);
                     final contact = it['contact'] as Map<String, dynamic>?;
@@ -103,10 +111,15 @@ class _ProvidersPageState extends State<ProvidersPage> {
                           barrierDismissible: false,
                           builder: (ctx) => AlertDialog(
                             title: const Text('Confirmar remoção'),
-                            content: Text('Remover "$name"? Esta ação não pode ser desfeita.'),
+                            content: Text(
+                                'Remover "$name"? Esta ação não pode ser desfeita.'),
                             actions: [
-                              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancelar')),
-                              TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Remover')),
+                              TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Cancelar')),
+                              TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Remover')),
                             ],
                           ),
                         );
@@ -116,20 +129,24 @@ class _ProvidersPageState extends State<ProvidersPage> {
                         try {
                           final removed = await _dao.remove(id);
                           if (!removed) {
-                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor não encontrado para remoção.')));
+                            messenger.showSnackBar(const SnackBar(
+                                content: Text(
+                                    'Fornecedor não encontrado para remoção.')));
                             return false;
                           }
                           // success; allow dismissal animation
                           return true;
                         } catch (e) {
-                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao remover: $e')));
+                          messenger.showSnackBar(
+                              SnackBar(content: Text('Erro ao remover: $e')));
                           return false;
                         }
                       },
                       onDismissed: (direction) async {
                         // reload items after successful dismissal
                         await _loadItems();
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor removido.')));
+                        messenger.showSnackBar(const SnackBar(
+                            content: Text('Fornecedor removido.')));
                       },
                       child: ProviderListItem(
                         id: id,
@@ -146,22 +163,32 @@ class _ProvidersPageState extends State<ProvidersPage> {
                             id: id,
                             name: name,
                             onEdit: () async {
+                              final messenger = ScaffoldMessenger.of(context);
                               // Abrir o formulário de edição
-                              final result = await showProviderFormDialog(context, initial: it);
+                              final result = await showProviderFormDialog(
+                                  context,
+                                  initial: it);
                               if (result != null) {
                                 try {
                                   await _dao.upsert(result);
                                   await _loadItems();
-                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor salvo com sucesso.')));
+                                  if (mounted) {
+                                    messenger.showSnackBar(const SnackBar(
+                                        content: Text(
+                                            'Fornecedor salvo com sucesso.')));
+                                  }
                                 } catch (e) {
-                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao salvar: $e')));
+                                  messenger.showSnackBar(SnackBar(
+                                      content: Text('Erro ao salvar: $e')));
                                 }
                               }
                             },
                             onRemove: () async {
                               // Delegar remoção: aqui apenas atualizamos o armazenamento local
                               try {
-                                final remaining = _items.where((e) => (e['id'] as String?) != id).toList();
+                                final remaining = _items
+                                    .where((e) => (e['id'] as String?) != id)
+                                    .toList();
                                 await _dao.upsertAll(remaining);
                                 await _loadItems();
                               } catch (e) {
@@ -172,14 +199,21 @@ class _ProvidersPageState extends State<ProvidersPage> {
                         },
                         onEdit: () async {
                           // icon edit pressed: open form directly
-                          final result = await showProviderFormDialog(context, initial: it);
+                          final messenger = ScaffoldMessenger.of(context);
+                          final result = await showProviderFormDialog(context,
+                              initial: it);
                           if (result != null) {
                             try {
                               await _dao.upsert(result);
                               await _loadItems();
-                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor salvo com sucesso.')));
+                              if (mounted) {
+                                messenger.showSnackBar(const SnackBar(
+                                    content:
+                                        Text('Fornecedor salvo com sucesso.')));
+                              }
                             } catch (e) {
-                              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao salvar: $e')));
+                              messenger.showSnackBar(SnackBar(
+                                  content: Text('Erro ao salvar: $e')));
                             }
                           }
                         },
@@ -190,7 +224,9 @@ class _ProvidersPageState extends State<ProvidersPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           // Abrir fluxo de adicionar/editar implementado separadamente
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ação de adicionar implementada em arquivo separado')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content:
+                  Text('Ação de adicionar implementada em arquivo separado')));
         },
         child: const Icon(Icons.add),
       ),
