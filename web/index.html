@@ -31,6 +31,13 @@
 
   <title>flutter_application_1</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    /* Prevent browser pull-to-refresh / overscroll behavior on mobile web
+       so scrolling inside the Flutter app doesn't trigger a full page reload. */
+    html, body {
+      overscroll-behavior-y: contain;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

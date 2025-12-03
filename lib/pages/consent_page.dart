@@ -16,10 +16,12 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
   final ScrollController _scrollController = ScrollController();
   double _scrollProgress = 0.0;
   bool _isRead = false;
+  late Future<String> _policyFuture;
 
   @override
   void initState() {
     super.initState();
+    _policyFuture = _loadPolicy();
   }
 
   @override
@@ -53,7 +55,7 @@ class _PolicyViewerPageState extends State<PolicyViewerPage> {
               ? 'Política de Privacidade'
               : 'Termos de Uso')),
       body: FutureBuilder<String>(
-        future: _loadPolicy(),
+        future: _policyFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -159,6 +161,11 @@ class _ConsentPageState extends State<ConsentPage> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final prefs = Provider.of<PrefsService>(context, listen: false);
@@ -174,7 +181,7 @@ class _ConsentPageState extends State<ConsentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Consentimento')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
