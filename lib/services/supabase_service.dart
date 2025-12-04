@@ -13,6 +13,9 @@ class SupabaseService {
   Future<Map<String, dynamic>?> createHabit(Map<String, dynamic> habit) async {
     try {
       final row = <String, dynamic>{
+        // IMPORTANTE: Usar o mesmo ID local para manter sincronia
+        if (habit.containsKey('id') && habit['id'] != null) 'id': habit['id'],
+
         // Ensure we always send `title` (DB has NOT NULL constraint)
         'title': habit['title'] ?? habit['description'] ?? '',
 
@@ -37,12 +40,38 @@ class SupabaseService {
         'created_at': DateTime.now().toIso8601String(),
       };
 
+      print('💾 [createHabit] Criando hábito com dados: $row');
       final response = await _client.from('habits').insert(row).select();
+      print('✅ [createHabit] Resposta do Supabase: $response');
       if ((response as List).isEmpty) return null;
       return Map<String, dynamic>.from(response.first);
     } catch (e) {
-      print('❌ Erro ao criar habit no Supabase: $e');
+      print('❌ [createHabit] Erro ao criar habit no Supabase: $e');
       return null;
+    }
+  }
+
+  /// Deleta um hábito no Supabase pelo ID
+  /// Retorna true se bem-sucedido, false caso contrário
+  Future<bool> deleteHabit(String habitId) async {
+    print('🗑️ [deleteHabit] Tentando deletar hábito com ID: $habitId');
+    try {
+      // Primeiro, verificar se o hábito existe
+      final existing = await _client.from('habits').select().eq('id', habitId);
+      print(
+          '🔍 [deleteHabit] Registros encontrados com este ID: ${(existing as List).length}');
+      if ((existing as List).isEmpty) {
+        print('⚠️ [deleteHabit] Nenhum hábito encontrado com ID: $habitId');
+        return false;
+      }
+
+      final response =
+          await _client.from('habits').delete().eq('id', habitId).select();
+      print('✅ [deleteHabit] Resposta da exclusão: $response');
+      return true;
+    } catch (e) {
+      print('❌ [deleteHabit] Erro ao deletar habit no Supabase: $e');
+      return false;
     }
   }
 

@@ -72,17 +72,23 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
                   'enabled': _enabled,
                   'target': 1,
                 });
+                print('💾 [CreateHabit] Hábito criado localmente com ID: $id');
+
                 // Try to create on Supabase as well (if authenticated)
+                // IMPORTANTE: Passar o mesmo ID local para manter sincronia
                 try {
                   final sup = SupabaseService();
-                  await sup.createHabit({
+                  final result = await sup.createHabit({
+                    'id': id, // Usar o mesmo ID local!
                     'title': title,
                     'goal': goal,
                     'reminder': reminder,
                     'enabled': _enabled,
                     'target': 1,
                   });
+                  print('✅ [CreateHabit] Resultado Supabase: $result');
                 } catch (e) {
+                  print('❌ [CreateHabit] Erro ao criar no Supabase: $e');
                   // ignore errors: offline/local-first behavior
                 }
                 await prefs.setBoolKey('first_habit_created', true);

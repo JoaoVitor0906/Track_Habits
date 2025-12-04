@@ -94,11 +94,12 @@ class UserAvatar extends StatelessWidget {
 
                 try {
                   final data = snapshot.data!;
+                  final colorScheme = Theme.of(context).colorScheme;
                   if (data is Uint8List && data.isNotEmpty) {
                     return CircleAvatar(
                       radius: size / 2,
                       backgroundImage: MemoryImage(data),
-                      backgroundColor: Theme.of(context).primaryColor,
+                      backgroundColor: colorScheme.primaryContainer,
                     );
                   }
 
@@ -106,7 +107,7 @@ class UserAvatar extends StatelessWidget {
                     return CircleAvatar(
                       radius: size / 2,
                       backgroundImage: FileImage(data),
-                      backgroundColor: Theme.of(context).primaryColor,
+                      backgroundColor: colorScheme.primaryContainer,
                     );
                   }
                 } catch (e) {
@@ -124,13 +125,19 @@ class UserAvatar extends StatelessWidget {
 
   Widget _buildInitialsAvatar(BuildContext context) {
     final initials = profileRepository.getInitials();
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // No dark mode, usar surface para contrastar com o header primary
+    // No light mode, usar primaryContainer
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor:
+          isDark ? colorScheme.surface : colorScheme.primaryContainer,
       child: Text(
         initials,
         style: TextStyle(
-          color: Colors.white,
+          color: isDark ? colorScheme.primary : colorScheme.onPrimaryContainer,
           fontSize: size * 0.4,
           fontWeight: FontWeight.bold,
         ),
@@ -139,13 +146,14 @@ class UserAvatar extends StatelessWidget {
   }
 
   Widget _buildEditButton(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       // Use a contrasting background so the small edit button is visible over
       // dark/primary headers (was blending into header color).
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -157,7 +165,7 @@ class UserAvatar extends StatelessWidget {
             child: Icon(
               Icons.edit,
               size: size * 0.25,
-              color: Theme.of(context).primaryColor,
+              color: colorScheme.primary,
             ),
           ),
         ),

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../domain/repositories/profile_repository.dart';
 import '../widgets/user_avatar.dart';
+import '../theme/theme_controller.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'dart:typed_data';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   final ProfileRepository profileRepository;
 
   const AppDrawer({
@@ -15,7 +17,22 @@ class AppDrawer extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  ProfileRepository get profileRepository => widget.profileRepository;
+
+  @override
   Widget build(BuildContext context) {
+    final themeController = context.watch<ThemeController>();
+    final brightness = MediaQuery.platformBrightnessOf(context);
+
+    // Calcular se está em modo escuro
+    final isDark = themeController.mode == ThemeMode.dark ||
+        (themeController.mode == ThemeMode.system &&
+            brightness == Brightness.dark);
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -29,6 +46,19 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushNamed(context, '/history');
             },
           ),
+          ListTile(
+            leading: Icon(isDark ? Icons.dark_mode : Icons.light_mode_outlined),
+            title: const Text('Tema escuro'),
+            trailing: Switch(
+              value: isDark,
+              onChanged: (value) {
+                themeController.toggle(brightness);
+              },
+            ),
+            onTap: () {
+              themeController.toggle(brightness);
+            },
+          ),
           const Divider(),
           // Outros itens do drawer podem ser adicionados aqui
         ],
@@ -37,9 +67,10 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildDrawerHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return DrawerHeader(
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
+        color: colorScheme.primary,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -57,8 +88,8 @@ class AppDrawer extends StatelessWidget {
               profileRepository.getUserName() ?? 'Usuário',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -69,8 +100,8 @@ class AppDrawer extends StatelessWidget {
               profileRepository.getUserEmail() ?? '',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: colorScheme.onPrimary.withOpacity(0.7),
                 fontSize: 14,
               ),
             ),

@@ -127,13 +127,23 @@ class _HomePageState extends State<HomePage> {
       userName: prefs.getStringKey('userName'),
       onAdd: (s) async {
         final messenger = ScaffoldMessenger.of(context);
-        await prefs.saveHabit({
+        final id = await prefs.saveHabit({
           'title': s.title,
           'goal': s.description,
           'reminder': '',
           'enabled': true,
           'target': 1
         });
+        // Sincronizar com Supabase usando o mesmo ID
+        try {
+          final sup = SupabaseService();
+          await sup.createHabit({
+            'id': id,
+            'title': s.title,
+            'goal': s.description,
+            'target': 1,
+          });
+        } catch (_) {}
         if (mounted) {
           messenger.showSnackBar(
               SnackBar(content: Text('Hábito criado: ${s.title}')));
@@ -166,6 +176,16 @@ class _HomePageState extends State<HomePage> {
                     'enabled': true,
                     'target': 3
                   });
+                  // Sincronizar com Supabase usando o mesmo ID
+                  try {
+                    final sup = SupabaseService();
+                    await sup.createHabit({
+                      'id': id,
+                      'title': 'Beber água',
+                      'goal': '3 copos/dia',
+                      'target': 3,
+                    });
+                  } catch (_) {}
                   await prefs.setBoolKey('first_habit_created', true);
                   await prefs.setStringKey('first_habit_id', id);
                   if (mounted) {
@@ -414,7 +434,21 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                       child: const Text('Excluir'))
                 ]));
     if (ok == true) {
+      print(
+          '🗑️ [_delete] Iniciando exclusão do hábito local ID: ${widget.habitId}');
       await _prefs!.deleteHabit(widget.habitId);
+      print('✅ [_delete] Hábito excluído localmente');
+
+      // Try to delete from Supabase as well (if authenticated)
+      try {
+        final sup = SupabaseService();
+        print('🔄 [_delete] Tentando excluir do Supabase...');
+        final success = await sup.deleteHabit(widget.habitId);
+        print('📊 [_delete] Resultado da exclusão no Supabase: $success');
+      } catch (e) {
+        print('❌ [_delete] Erro ao excluir do Supabase: $e');
+        // ignore errors: offline/local-first behavior
+      }
       if (mounted) Navigator.pop(context);
     }
   }

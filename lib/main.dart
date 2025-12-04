@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'theme/color_schemes.dart';
+import 'theme/theme_controller.dart';
 import 'pages/splash_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/consent_page.dart';
@@ -43,10 +45,14 @@ Future<void> main() async {
   final profileRepository =
       ProfileRepositoryImpl(preferencesService, localPhotoStore);
 
+  // Criar o controlador de tema
+  final themeController = ThemeController();
+
   runApp(MultiProvider(
     providers: [
       Provider<PrefsService>.value(value: prefsService),
       Provider<ProfileRepository>.value(value: profileRepository),
+      ChangeNotifierProvider<ThemeController>.value(value: themeController),
     ],
     child: const TrackHabitsApp(),
   ));
@@ -57,20 +63,13 @@ class TrackHabitsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = context.watch<ThemeController>();
     return MaterialApp(
       title: 'TrackHabits',
+      themeMode: themeController.mode,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF059669), // Emerald primária
-          primary: const Color(0xFF059669), // Emerald
-          secondary: const Color(0xFF4F46E5), // Indigo
-          surface: const Color(0xFFFFFFFF), // Surface
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-          onSurface: const Color(0xFF0F172A), // Texto claro
-          brightness: Brightness.light,
-        ),
+        colorScheme: lightColorScheme,
         typography: Typography.material2021(),
         textTheme: GoogleFonts.poppinsTextTheme().copyWith(
           headlineLarge: GoogleFonts.poppins(
@@ -189,6 +188,52 @@ class TrackHabitsApp extends StatelessWidget {
           ),
         ),
         // A11Y: Suporte a text scaling
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: darkColorScheme,
+        typography: Typography.material2021(),
+        textTheme: GoogleFonts.poppinsTextTheme().apply(
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
+        ),
+        cardTheme: CardThemeData(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 2,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          filled: true,
+        ),
+        appBarTheme: AppBarTheme(
+          elevation: 0,
+          centerTitle: true,
+        ),
+        bottomSheetTheme: BottomSheetThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+        ),
+        dialogTheme: DialogThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       // Roteamento conforme PRD
