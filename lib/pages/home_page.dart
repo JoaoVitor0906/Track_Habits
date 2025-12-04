@@ -257,7 +257,9 @@ class _HomePageState extends State<HomePage> {
                               final userId = sup.getCurrentUser()?.id;
                               if (userId != null) {
                                 await sup.recordHabitCompletion(
-                                    userId: userId, habitId: nid);
+                                    userId: userId,
+                                    habitId: nid,
+                                    date: DateTime.now());
                               }
                             } catch (_) {
                               // ignore: keep local-first behavior

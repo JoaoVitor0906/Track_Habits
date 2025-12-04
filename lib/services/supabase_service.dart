@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../data/models/provider_dto.dart';
 import '../data/models/habit_completion_dto.dart';
 import '../data/mappers/habit_completion_mapper.dart';
 import '../domain/entities/habit_completion_entities.dart';
@@ -8,67 +7,6 @@ import '../domain/entities/habit_completion_entities.dart';
 /// Fornece métodos para operações CRUD com tabelas do backend
 class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
-
-  /// Obtém a lista de providers (fornecedores)
-  ///
-  /// Parâmetros:
-  /// - [limit]: número máximo de registros (padrão 20)
-  /// - [offset]: deslocamento para paginação (padrão 0)
-  /// - [searchTerm]: filtro opcional por nome ou descrição
-  ///
-  /// Retorna: Lista de [ProviderDto] ou lista vazia em caso de erro
-  Future<List<ProviderDto>> fetchProviders({
-    int limit = 20,
-    int offset = 0,
-    String? searchTerm,
-  }) async {
-    try {
-      var query = _client.from('providers').select();
-
-      // Aplicar filtro de busca se fornecido
-      if (searchTerm != null && searchTerm.isNotEmpty) {
-        query = query.ilike('name', '%$searchTerm%');
-      }
-
-      final response = await query.range(offset, offset + limit - 1);
-
-      final list = (response as List)
-          .map((item) => ProviderDto.fromMap(item as Map<String, dynamic>))
-          .toList();
-
-      return list;
-    } catch (e) {
-      print('❌ Erro ao buscar providers: $e');
-      return [];
-    }
-  }
-
-  /// Cria um novo provider
-  Future<ProviderDto?> createProvider({
-    required String name,
-    required double rating,
-    String? imageUrl,
-    String? brandColorHex,
-    double? distanceKm,
-  }) async {
-    try {
-      final response = await _client.from('providers').insert({
-        'name': name,
-        'rating': rating,
-        'image_url': imageUrl,
-        'brand_color_hex': brandColorHex,
-        'distance_km': distanceKm,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).select();
-
-      if ((response as List).isEmpty) return null;
-
-      return ProviderDto.fromMap(response.first);
-    } catch (e) {
-      print('❌ Erro ao criar provider: $e');
-      return null;
-    }
-  }
 
   /// Cria um hábito no Supabase (opcionalmente sincroniza dados locais com o servidor)
   /// Retorna o mapa criado ou null
@@ -108,53 +46,17 @@ class SupabaseService {
     }
   }
 
-  /// Atualiza um provider existente
-  Future<bool> updateProvider({
-    required int id,
-    required String name,
-    required double rating,
-    String? imageUrl,
-    String? brandColorHex,
-    double? distanceKm,
-  }) async {
-    try {
-      await _client.from('providers').update({
-        'name': name,
-        'rating': rating,
-        'image_url': imageUrl,
-        'brand_color_hex': brandColorHex,
-        'distance_km': distanceKm,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', id);
-
-      return true;
-    } catch (e) {
-      print('❌ Erro ao atualizar provider: $e');
-      return false;
-    }
-  }
-
-  /// Deleta um provider
-  Future<bool> deleteProvider(int id) async {
-    try {
-      await _client.from('providers').delete().eq('id', id);
-      return true;
-    } catch (e) {
-      print('❌ Erro ao deletar provider: $e');
-      return false;
-    }
-  }
-
   /// Registra a conclusão de um hábito no dia atual
   Future<bool> recordHabitCompletion({
     required String userId,
     required String habitId,
+    required DateTime date,
   }) async {
     try {
       final dto = await createHabitCompletion(
         userId: userId,
         habitId: habitId,
-        date: DateTime.now(),
+        date: date,
       );
 
       return dto != null;
