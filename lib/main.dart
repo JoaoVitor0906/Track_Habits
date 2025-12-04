@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'pages/splash_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/consent_page.dart';
@@ -39,11 +40,11 @@ Future<void> main() async {
   // PreferencesService is used by ProfileRepository (photo storage, user info)
   final preferencesService = PreferencesService(sp);
   final localPhotoStore = LocalPhotoStore();
-    final profileRepository =
+  final profileRepository =
       ProfileRepositoryImpl(preferencesService, localPhotoStore);
 
   runApp(MultiProvider(
-      providers: [
+    providers: [
       Provider<PrefsService>.value(value: prefsService),
       Provider<ProfileRepository>.value(value: profileRepository),
     ],
@@ -70,10 +71,122 @@ class TrackHabitsApp extends StatelessWidget {
           onSurface: const Color(0xFF0F172A), // Texto claro
           brightness: Brightness.light,
         ),
-        textTheme: const TextTheme(
-          headlineSmall: TextStyle(fontWeight: FontWeight.w600),
-          bodyLarge: TextStyle(),
-          bodyMedium: TextStyle(),
+        typography: Typography.material2021(),
+        textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+          headlineLarge: GoogleFonts.poppins(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
+          ),
+          headlineMedium: GoogleFonts.poppins(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.25,
+          ),
+          headlineSmall: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+          ),
+          titleLarge: GoogleFonts.poppins(
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+          ),
+          titleMedium: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.15,
+          ),
+          titleSmall: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.1,
+          ),
+          bodyLarge: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.5,
+          ),
+          bodyMedium: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.25,
+          ),
+          bodySmall: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.4,
+          ),
+          labelLarge: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.1,
+          ),
+          labelMedium: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
+          ),
+          labelSmall: GoogleFonts.poppins(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 2,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            side: BorderSide(
+              color: const Color(0xFF059669),
+              width: 1.5,
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+        ),
+        appBarTheme: AppBarTheme(
+          elevation: 0,
+          backgroundColor: const Color(0xFF059669),
+          foregroundColor: Colors.white,
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          centerTitle: true,
+        ),
+        bottomSheetTheme: BottomSheetThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+        ),
+        dialogTheme: DialogThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
         ),
         // A11Y: Suporte a text scaling
         visualDensity: VisualDensity.adaptivePlatformDensity,
