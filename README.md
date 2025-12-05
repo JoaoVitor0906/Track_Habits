@@ -177,9 +177,8 @@ Métodos principais:
 ## 👤 Autor
 
 **João Vitor Herzer**  
-Disciplina: *Desenvolvimento de Aplicações (Flutter)*  
+Disciplina: *Aplicações para Dispositivos Móveis*  
 Instituição: UTFPR  
-Versão: **v1.0 — Outubro/2025**
-
+Versão: **v1.5.12 — Dezembro/2025**
+Professor: Everton Coimbra De Araujo
 ---
-

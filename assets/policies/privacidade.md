@@ -7,7 +7,7 @@ Esta Política de Privacidade descreve como o aplicativo TrackHabits (doravante 
 **Controlador de dados:**
 - Nome: TrackHabits
 - Responsável: desenvolvedor/empresa responsável pelo aplicativo
-- E-mail para contato: suporte@trackhabits.example (substitua pelo e-mail real)
+- E-mail para contato: joao.210906@alunos.utfpr.edu.br
 
 **Dados que coletamos:**
 - Dados fornecidos diretamente pelo usuário: nome, e-mail, foto de perfil (se aplicável), preferências de uso, dados de hábitos e registros criados no app.
@@ -52,7 +52,7 @@ O titular dos dados tem, entre outros, os seguintes direitos, conforme a LGPD:
 - Revogação do consentimento, quando aplicável;
 - Oposição ao tratamento dos dados quando fundamentado em legítimo interesse.
 
-Para exercer seus direitos ou esclarecer dúvidas sobre esta política, entre em contato pelo e-mail: `suporte@trackhabits.example`.
+Para exercer seus direitos ou esclarecer dúvidas sobre esta política, entre em contato pelo e-mail: `joao.210906@alunos.utfpr.edu.br`.
 
 **Cookies e tecnologias semelhantes:**
 - O Aplicativo pode utilizar cookies ou tecnologias similares para melhorar a experiência do usuário e coletar informações de uso. O usuário pode gerenciar permissões pelo sistema operacional/dispositivo ou pelas configurações do Aplicativo.
