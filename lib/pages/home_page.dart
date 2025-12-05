@@ -25,6 +25,214 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _showManageGoalsModal(
+      BuildContext context, List<Map<String, dynamic>> habits) async {
+    final prefs = Provider.of<PrefsService>(context, listen: false);
+    final goals = prefs.getAllGoals();
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            if (goals.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.flag_outlined,
+                        size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Nenhuma meta criada',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Crie sua primeira meta usando o botão +',
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showCreateGoalModal(context);
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Criar Meta'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView(
+              controller: scrollController,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Suas Metas',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ...goals.map((g) {
+                  final id = g['id'] as String?;
+                  final title = g['title'] as String? ?? '—';
+                  final target = (g['target'] as int?) ?? 1;
+                  final reminder = g['reminder'] as String? ?? '';
+                  final completed = g['completed'] as bool? ?? false;
+                  final createdAt = g['createdAt'] as String?;
+
+                  String createdDate = '';
+                  if (createdAt != null) {
+                    final date = DateTime.tryParse(createdAt);
+                    if (date != null) {
+                      createdDate =
+                          '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+                    }
+                  }
+
+                  if (id == null) return const SizedBox();
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: ListTile(
+                      leading: Icon(
+                        completed ? Icons.check_circle : Icons.flag,
+                        color: completed
+                            ? Colors.green
+                            : Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(
+                        title,
+                        style: TextStyle(
+                          decoration:
+                              completed ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Meta: $target'),
+                          if (reminder.isNotEmpty) Text('Lembrete: $reminder'),
+                          if (createdDate.isNotEmpty)
+                            Text('Criada em: $createdDate',
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'complete') {
+                            await prefs.completeGoal(id);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text('Meta "$title" concluída!')),
+                              );
+                            }
+                          } else if (value == 'delete') {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                title: const Text('Excluir meta?'),
+                                content:
+                                    Text('Deseja excluir a meta "$title"?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(c, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(c, true),
+                                    style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.red),
+                                    child: const Text('Excluir'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              // Deletar localmente
+                              await prefs.deleteGoal(id);
+
+                              // Sincronizar exclusão com Supabase
+                              try {
+                                final sup = SupabaseService();
+                                await sup.deleteGoal(id);
+                              } catch (e) {
+                                print('❌ Erro ao deletar meta do Supabase: $e');
+                                // Continua mesmo com erro (local-first)
+                              }
+
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Meta "$title" excluída')),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (!completed)
+                            const PopupMenuItem(
+                              value: 'complete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check, color: Colors.green),
+                                  SizedBox(width: 8),
+                                  Text('Marcar como concluída'),
+                                ],
+                              ),
+                            ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Excluir'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _showCreateGoalModal(context);
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Criar nova meta'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,60 +264,7 @@ class _HomePageState extends State<HomePage> {
     // Build the page content into a list to avoid complex inline collection control-flow.
     final List<Widget> items = [];
 
-    items.add(Row(children: [
-      Expanded(
-          child:
-              ProgressOverview(total: totalTargets, completedToday: completed)),
-      const SizedBox(width: 8),
-      IconButton(
-        tooltip: 'Gerenciar metas',
-        icon: const Icon(Icons.flag),
-        onPressed: () async {
-          // Abre um modal para escolher qual hábito editar
-          if (habits.isNotEmpty) {
-            await showModalBottomSheet(
-              context: context,
-              builder: (ctx) {
-                return ListView(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Selecione um hábito para editar a meta:',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    ...habits.map((h) {
-                      final id = h['id'] as String?;
-                      final title = h['title'] as String? ?? '—';
-                      final target = (h['target'] as int?) ?? 1;
-                      if (id == null) return const SizedBox();
-                      return ListTile(
-                        title: Text(title),
-                        subtitle: Text('Meta: $target'),
-                        trailing: const Icon(Icons.edit),
-                        onTap: () async {
-                          Navigator.pop(ctx);
-                          final navigator = Navigator.of(context);
-                          await navigator.push(
-                            MaterialPageRoute(
-                              builder: (_) => HabitDetailPage(habitId: id),
-                            ),
-                          );
-                          if (mounted) await _loadHabits();
-                        },
-                      );
-                    }),
-                  ],
-                );
-              },
-            );
-          } else {
-            final navigator = Navigator.of(context);
-            await navigator.pushNamed('/create-habit');
-            if (mounted) await _loadHabits();
-          }
-        },
-      )
-    ]));
+    items.add(ProgressOverview(total: totalTargets, completedToday: completed));
 
     items.add(const SizedBox(height: 12));
 
@@ -307,7 +462,11 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.privacy_tip))
       ]),
       drawer: profileRepository != null
-          ? AppDrawer(profileRepository: profileRepository)
+          ? AppDrawer(
+              profileRepository: profileRepository,
+              habits: habits,
+              onManageGoals: () => _showManageGoalsModal(context, habits),
+            )
           : Drawer(
               child: ListView(padding: EdgeInsets.zero, children: [
                 DrawerHeader(
@@ -342,12 +501,182 @@ class _HomePageState extends State<HomePage> {
       body: Padding(
           padding: const EdgeInsets.all(16), child: ListView(children: items)),
       floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            final navigator = Navigator.of(context);
-            await navigator.pushNamed('/create-habit');
-            if (mounted) await _loadHabits();
-          },
-          child: const Icon(Icons.add)),
+          onPressed: () => _showAddMenu(context), child: const Icon(Icons.add)),
+    );
+  }
+
+  void _showAddMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: const Text('Criar Hábito'),
+              subtitle: const Text('Atividade recorrente para acompanhar'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final navigator = Navigator.of(context);
+                await navigator.pushNamed('/create-habit');
+                if (mounted) await _loadHabits();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag),
+              title: const Text('Criar Meta'),
+              subtitle: const Text('Objetivo numérico com lembrete'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showCreateGoalModal(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCreateGoalModal(BuildContext context) {
+    final titleController = TextEditingController();
+    final targetController = TextEditingController();
+    final reminderController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Criar Meta'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Título da meta',
+                    hintText: 'Ex: Beber água',
+                    prefixIcon: Icon(Icons.title),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe o título da meta';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: targetController,
+                  decoration: const InputDecoration(
+                    labelText: 'Meta numérica',
+                    hintText: 'Ex: 8 (copos de água)',
+                    prefixIcon: Icon(Icons.numbers),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe a meta numérica';
+                    }
+                    final num = int.tryParse(value.trim());
+                    if (num == null || num <= 0) {
+                      return 'Informe um número válido maior que 0';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: reminderController,
+                  decoration: const InputDecoration(
+                    labelText: 'Lembrete (HH:mm)',
+                    hintText: 'Ex: 09:00',
+                    prefixIcon: Icon(Icons.access_time),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                  onTap: () async {
+                    final time = await showTimePicker(
+                      context: ctx,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      final hour = time.hour.toString().padLeft(2, '0');
+                      final minute = time.minute.toString().padLeft(2, '0');
+                      reminderController.text = '$hour:$minute';
+                    }
+                  },
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final regex = RegExp(r'^([01]?\d|2[0-3]):([0-5]\d)$');
+                      if (!regex.hasMatch(value)) {
+                        return 'Formato inválido. Use HH:mm';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                final prefs = Provider.of<PrefsService>(context, listen: false);
+                final messenger = ScaffoldMessenger.of(context);
+
+                final title = titleController.text.trim();
+                final target = int.parse(targetController.text.trim());
+                final reminder = reminderController.text.trim();
+
+                // Salvar como meta localmente (separado dos hábitos)
+                final goalId = await prefs.saveGoal({
+                  'title': title,
+                  'target': target,
+                  'reminder': reminder,
+                  'completed': false,
+                  'currentProgress': 0,
+                });
+
+                // Sincronizar com Supabase usando o MESMO ID local
+                try {
+                  final sup = SupabaseService();
+                  await sup.createGoal(
+                    id: goalId, // Passa o ID local para manter sincronizado
+                    title: title,
+                    target: target,
+                    reminder: reminder.isNotEmpty ? reminder : null,
+                  );
+                } catch (e) {
+                  print('❌ Erro ao sincronizar meta com Supabase: $e');
+                  // Continua mesmo com erro (local-first)
+                }
+
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                }
+
+                if (mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Meta criada: $title')),
+                  );
+                  // Abrir o modal de gerenciamento de metas para mostrar a nova meta
+                  _showManageGoalsModal(context, _habits);
+                }
+              }
+            },
+            child: const Text('Criar'),
+          ),
+        ],
+      ),
     );
   }
 }

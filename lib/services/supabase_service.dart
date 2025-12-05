@@ -2,6 +2,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/models/habit_completion_dto.dart';
 import '../data/mappers/habit_completion_mapper.dart';
 import '../domain/entities/habit_completion_entities.dart';
+import '../data/models/goal_dto.dart';
+import '../data/mappers/goal_mapper.dart';
+import '../domain/entities/goal_entity.dart';
 
 /// Serviço para integração com Supabase
 /// Fornece métodos para operações CRUD com tabelas do backend
@@ -274,5 +277,238 @@ class SupabaseService {
   /// Verifica se há uma sessão ativa
   bool isUserAuthenticated() {
     return _client.auth.currentSession != null;
+  }
+
+  // ==================== GOALS ====================
+
+  /// Cria uma nova meta no Supabase
+  /// Retorna o GoalDto criado ou null em caso de erro
+  /// [id] - ID opcional para sincronizar com armazenamento local
+  Future<GoalDto?> createGoal({
+    String? id,
+    required String title,
+    required int target,
+    String? reminder,
+  }) async {
+    try {
+      // Permite criar metas mesmo sem autenticação (local-first)
+      final userId = getCurrentUser()?.id;
+
+      final dto = GoalDto(
+        id: id, // Usa o ID local se fornecido, senão Supabase gera um novo
+        userId: userId, // Pode ser null se não autenticado
+        title: title,
+        target: target,
+        currentProgress: 0,
+        reminder: reminder,
+        completed: false,
+      );
+
+      print('💾 [createGoal] Criando meta: ${dto.toJson()}');
+      final response =
+          await _client.from('goals').insert(dto.toJson()).select();
+
+      if ((response as List).isEmpty) return null;
+      final created = GoalDto.fromJson(response.first);
+      print('✅ [createGoal] Meta criada com ID: ${created.id}');
+      return created;
+    } catch (e) {
+      print('❌ [createGoal] Erro ao criar meta: $e');
+      return null;
+    }
+  }
+
+  /// Busca todas as metas do usuário atual (ou metas sem usuário se não autenticado)
+  Future<List<GoalDto>> fetchGoals() async {
+    try {
+      final userId = getCurrentUser()?.id;
+
+      var query = _client.from('goals').select();
+
+      if (userId != null) {
+        // Usuário autenticado: busca suas metas
+        query = query.eq('user_id', userId);
+      } else {
+        // Usuário não autenticado: busca metas sem user_id
+        query = query.isFilter('user_id', null);
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      final list = (response as List)
+          .map((item) => GoalDto.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      print('✅ [fetchGoals] ${list.length} metas encontradas');
+      return list;
+    } catch (e) {
+      print('❌ [fetchGoals] Erro ao buscar metas: $e');
+      return [];
+    }
+  }
+
+  /// Retorna as metas como entidades de domínio
+  Future<List<Goal>> fetchGoalsAsEntities() async {
+    final dtos = await fetchGoals();
+    return GoalMapper.toEntityList(dtos);
+  }
+
+  /// Busca uma meta específica pelo ID
+  Future<GoalDto?> fetchGoalById(String goalId) async {
+    try {
+      final response =
+          await _client.from('goals').select().eq('id', goalId).single();
+
+      return GoalDto.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      print('❌ [fetchGoalById] Erro ao buscar meta: $e');
+      return null;
+    }
+  }
+
+  /// Atualiza o progresso de uma meta
+  Future<GoalDto?> updateGoalProgress(String goalId, int newProgress) async {
+    try {
+      final response = await _client
+          .from('goals')
+          .update({'current_progress': newProgress})
+          .eq('id', goalId)
+          .select();
+
+      if ((response as List).isEmpty) return null;
+      print('✅ [updateGoalProgress] Progresso atualizado para: $newProgress');
+      return GoalDto.fromJson(response.first);
+    } catch (e) {
+      print('❌ [updateGoalProgress] Erro ao atualizar progresso: $e');
+      return null;
+    }
+  }
+
+  /// Marca uma meta como concluída
+  Future<GoalDto?> completeGoal(String goalId) async {
+    try {
+      final response = await _client
+          .from('goals')
+          .update({
+            'completed': true,
+            'completed_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', goalId)
+          .select();
+
+      if ((response as List).isEmpty) return null;
+      print('✅ [completeGoal] Meta marcada como concluída');
+      return GoalDto.fromJson(response.first);
+    } catch (e) {
+      print('❌ [completeGoal] Erro ao completar meta: $e');
+      return null;
+    }
+  }
+
+  /// Reabre uma meta (remove status de concluída)
+  Future<GoalDto?> reopenGoal(String goalId) async {
+    try {
+      final response = await _client
+          .from('goals')
+          .update({
+            'completed': false,
+            'completed_at': null,
+          })
+          .eq('id', goalId)
+          .select();
+
+      if ((response as List).isEmpty) return null;
+      print('✅ [reopenGoal] Meta reaberta');
+      return GoalDto.fromJson(response.first);
+    } catch (e) {
+      print('❌ [reopenGoal] Erro ao reabrir meta: $e');
+      return null;
+    }
+  }
+
+  /// Atualiza uma meta existente
+  Future<GoalDto?> updateGoal({
+    required String goalId,
+    String? title,
+    int? target,
+    String? reminder,
+  }) async {
+    try {
+      final updates = <String, dynamic>{};
+      if (title != null) updates['title'] = title;
+      if (target != null) updates['target'] = target;
+      if (reminder != null) updates['reminder'] = reminder;
+
+      if (updates.isEmpty) return null;
+
+      final response =
+          await _client.from('goals').update(updates).eq('id', goalId).select();
+
+      if ((response as List).isEmpty) return null;
+      print('✅ [updateGoal] Meta atualizada');
+      return GoalDto.fromJson(response.first);
+    } catch (e) {
+      print('❌ [updateGoal] Erro ao atualizar meta: $e');
+      return null;
+    }
+  }
+
+  /// Deleta uma meta
+  Future<bool> deleteGoal(String goalId) async {
+    try {
+      print('🗑️ [deleteGoal] Deletando meta ID: $goalId');
+      await _client.from('goals').delete().eq('id', goalId);
+      print('✅ [deleteGoal] Meta deletada com sucesso');
+      return true;
+    } catch (e) {
+      print('❌ [deleteGoal] Erro ao deletar meta: $e');
+      return false;
+    }
+  }
+
+  /// Busca metas filtradas por status de conclusão
+  Future<List<GoalDto>> fetchGoalsByStatus({required bool completed}) async {
+    try {
+      final userId = getCurrentUser()?.id;
+      if (userId == null) return [];
+
+      final response = await _client
+          .from('goals')
+          .select()
+          .eq('user_id', userId)
+          .eq('completed', completed)
+          .order('created_at', ascending: false);
+
+      return (response as List)
+          .map((item) => GoalDto.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      print('❌ [fetchGoalsByStatus] Erro: $e');
+      return [];
+    }
+  }
+
+  /// Retorna estatísticas das metas do usuário
+  Future<Map<String, int>> getGoalStats() async {
+    try {
+      final userId = getCurrentUser()?.id;
+      if (userId == null) return {'total': 0, 'completed': 0, 'pending': 0};
+
+      final response =
+          await _client.from('goals').select('completed').eq('user_id', userId);
+
+      final list = response as List;
+      final total = list.length;
+      final completed = list.where((g) => g['completed'] == true).length;
+
+      return {
+        'total': total,
+        'completed': completed,
+        'pending': total - completed,
+      };
+    } catch (e) {
+      print('❌ [getGoalStats] Erro: $e');
+      return {'total': 0, 'completed': 0, 'pending': 0};
+    }
   }
 }

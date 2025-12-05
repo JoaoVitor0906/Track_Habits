@@ -10,10 +10,14 @@ import 'dart:typed_data';
 
 class AppDrawer extends StatefulWidget {
   final ProfileRepository profileRepository;
+  final List<Map<String, dynamic>> habits;
+  final VoidCallback? onManageGoals;
 
   const AppDrawer({
     Key? key,
     required this.profileRepository,
+    this.habits = const [],
+    this.onManageGoals,
   }) : super(key: key);
 
   @override
@@ -44,6 +48,18 @@ class _AppDrawerState extends State<AppDrawer> {
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, '/history');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.flag),
+            title: const Text('Gerenciar Metas'),
+            onTap: () {
+              Navigator.pop(context);
+              if (widget.onManageGoals != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  widget.onManageGoals!();
+                });
+              }
             },
           ),
           ListTile(

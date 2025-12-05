@@ -248,22 +248,70 @@ class PrefsService {
   /// Clears the stored completion history.
   Future<void> clearCompletionHistory() async =>
       await _prefs.remove(_habitCompletionHistoryKey);
-}
 
-class HabitService {
-  final PrefsService prefs;
-  HabitService(this.prefs);
+  // --- Goals management (separate from habits) ---
+  static const String _goalsListKey = 'goals_list';
 
-  Future<void> createExampleHabit() async {
-    if (prefs.getAllHabits().isEmpty) {
-      final id = await prefs.saveHabit({
-        'title': 'Beber água',
-        'goal': '3 copos/dia',
-        'reminder': '09:00',
-        'enabled': true
-      });
-      await prefs.setBoolKey('first_habit_created', true);
-      await prefs.setStringKey('first_habit_id', id);
+  /// Saves a goal and returns its ID.
+  Future<String> saveGoal(Map<String, dynamic> goal) async {
+    final id = (goal['id'] as String?) ?? const Uuid().v4();
+    final key = 'goal_$id';
+    final withId = Map<String, dynamic>.from(goal);
+    withId['id'] = id;
+    withId['createdAt'] =
+        withId['createdAt'] ?? DateTime.now().toIso8601String();
+    await _prefs.setString(key, jsonEncode(withId));
+    final ids = _prefs.getStringList(_goalsListKey) ?? [];
+    if (!ids.contains(id)) {
+      ids.add(id);
+      await _prefs.setStringList(_goalsListKey, ids);
+    }
+    return id;
+  }
+
+  /// Gets a goal by ID.
+  Map<String, dynamic>? getGoal(String id) {
+    final raw = _prefs.getString('goal_$id');
+    if (raw == null) return null;
+    return Map<String, dynamic>.from(jsonDecode(raw));
+  }
+
+  /// Deletes a goal by ID.
+  Future<void> deleteGoal(String id) async {
+    await _prefs.remove('goal_$id');
+    final ids = _prefs.getStringList(_goalsListKey) ?? [];
+    ids.remove(id);
+    await _prefs.setStringList(_goalsListKey, ids);
+  }
+
+  /// Returns all goals.
+  List<Map<String, dynamic>> getAllGoals() {
+    final ids = _prefs.getStringList(_goalsListKey) ?? [];
+    final out = <Map<String, dynamic>>[];
+    for (final id in ids) {
+      final g = getGoal(id);
+      if (g != null) out.add(g);
+    }
+    return out;
+  }
+
+  /// Updates a goal's progress.
+  Future<void> updateGoalProgress(String id, int currentProgress) async {
+    final goal = getGoal(id);
+    if (goal != null) {
+      goal['currentProgress'] = currentProgress;
+      goal['updatedAt'] = DateTime.now().toIso8601String();
+      await _prefs.setString('goal_$id', jsonEncode(goal));
+    }
+  }
+
+  /// Marks a goal as completed.
+  Future<void> completeGoal(String id) async {
+    final goal = getGoal(id);
+    if (goal != null) {
+      goal['completed'] = true;
+      goal['completedAt'] = DateTime.now().toIso8601String();
+      await _prefs.setString('goal_$id', jsonEncode(goal));
     }
   }
 }
