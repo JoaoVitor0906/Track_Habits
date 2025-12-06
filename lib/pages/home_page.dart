@@ -30,6 +30,7 @@ class _HomePageState extends State<HomePage> {
     final prefs = Provider.of<PrefsService>(context, listen: false);
     final goals = prefs.getAllGoals();
 
+    final parentContext = context;
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -39,7 +40,7 @@ class _HomePageState extends State<HomePage> {
           minChildSize: 0.3,
           maxChildSize: 0.9,
           expand: false,
-          builder: (context, scrollController) {
+          builder: (_, scrollController) {
             if (goals.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.all(24),
@@ -64,7 +65,7 @@ class _HomePageState extends State<HomePage> {
                     FilledButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        _showCreateGoalModal(context);
+                        _showCreateGoalModal(parentContext);
                       },
                       icon: const Icon(Icons.add),
                       label: const Text('Criar Meta'),
@@ -110,7 +111,7 @@ class _HomePageState extends State<HomePage> {
                         completed ? Icons.check_circle : Icons.flag,
                         color: completed
                             ? Colors.green
-                            : Theme.of(context).colorScheme.primary,
+                            : Theme.of(parentContext).colorScheme.primary,
                       ),
                       title: Text(
                         title,
@@ -130,82 +131,99 @@ class _HomePageState extends State<HomePage> {
                                     fontSize: 12, color: Colors.grey)),
                         ],
                       ),
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'complete') {
-                            await prefs.completeGoal(id);
-                            if (ctx.mounted) Navigator.pop(ctx);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Meta "$title" concluída!')),
-                              );
-                            }
-                          } else if (value == 'delete') {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (c) => AlertDialog(
-                                title: const Text('Excluir meta?'),
-                                content:
-                                    Text('Deseja excluir a meta "$title"?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(c, false),
-                                    child: const Text('Cancelar'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            tooltip: 'Editar',
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _showEditGoalModal(parentContext, g);
+                            },
+                          ),
+                          PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'complete') {
+                                await prefs.completeGoal(id);
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                            Text('Meta "$title" concluída!')),
+                                  );
+                                }
+                              } else if (value == 'delete') {
+                                final confirm = await showDialog<bool>(
+                                  context: parentContext,
+                                  builder: (c) => AlertDialog(
+                                    title: const Text('Excluir meta?'),
+                                    content:
+                                        Text('Deseja excluir a meta "$title"?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(c, false),
+                                        child: const Text('Cancelar'),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.pop(c, true),
+                                        style: FilledButton.styleFrom(
+                                            backgroundColor: Colors.red),
+                                        child: const Text('Excluir'),
+                                      ),
+                                    ],
                                   ),
-                                  FilledButton(
-                                    onPressed: () => Navigator.pop(c, true),
-                                    style: FilledButton.styleFrom(
-                                        backgroundColor: Colors.red),
-                                    child: const Text('Excluir'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirm == true) {
-                              // Deletar localmente
-                              await prefs.deleteGoal(id);
-
-                              // Sincronizar exclusão com Supabase
-                              try {
-                                final sup = SupabaseService();
-                                await sup.deleteGoal(id);
-                              } catch (e) {
-                                print('❌ Erro ao deletar meta do Supabase: $e');
-                                // Continua mesmo com erro (local-first)
-                              }
-
-                              if (ctx.mounted) Navigator.pop(ctx);
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text('Meta "$title" excluída')),
                                 );
+                                if (confirm == true) {
+                                  // Deletar localmente
+                                  await prefs.deleteGoal(id);
+
+                                  // Sincronizar exclusão com Supabase
+                                  try {
+                                    final sup = SupabaseService();
+                                    await sup.deleteGoal(id);
+                                  } catch (e) {
+                                    print(
+                                        '❌ Erro ao deletar meta do Supabase: $e');
+                                    // Continua mesmo com erro (local-first)
+                                  }
+
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                                      SnackBar(
+                                          content:
+                                              Text('Meta "$title" excluída')),
+                                    );
+                                  }
+                                }
                               }
-                            }
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          if (!completed)
-                            const PopupMenuItem(
-                              value: 'complete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.check, color: Colors.green),
-                                  SizedBox(width: 8),
-                                  Text('Marcar como concluída'),
-                                ],
+                            },
+                            itemBuilder: (context) => [
+                              if (!completed)
+                                const PopupMenuItem(
+                                  value: 'complete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.check, color: Colors.green),
+                                      SizedBox(width: 8),
+                                      Text('Marcar como concluída'),
+                                    ],
+                                  ),
+                                ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Excluir'),
+                                  ],
+                                ),
                               ),
-                            ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Excluir'),
-                              ],
-                            ),
+                            ],
                           ),
                         ],
                       ),
@@ -218,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                   child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      _showCreateGoalModal(context);
+                      _showCreateGoalModal(parentContext);
                     },
                     icon: const Icon(Icons.add),
                     label: const Text('Criar nova meta'),
@@ -391,15 +409,22 @@ class _HomePageState extends State<HomePage> {
         items.add(ListTile(
           title: Text(title),
           subtitle: Text(goal),
-          onTap: () async {
-            final navigator = Navigator.of(context);
-            await navigator.push(MaterialPageRoute(
-                builder: (_) => HabitDetailPage(habitId: nid)));
-            if (mounted) await _loadHabits();
+          onTap: () {
+            _showHabitInfoDialog(context, h);
           },
-          trailing: SizedBox(
-            width: 140,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                tooltip: 'Editar',
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  await navigator.push(MaterialPageRoute(
+                      builder: (_) => HabitDetailPage(habitId: nid)));
+                  if (mounted) await _loadHabits();
+                },
+              ),
               IconButton(
                   icon: const Icon(Icons.remove),
                   onPressed: current <= 0
@@ -409,11 +434,8 @@ class _HomePageState extends State<HomePage> {
                               nid, DateTime.now(), -1);
                           if (mounted) setState(() {});
                         }),
-              Expanded(
-                  child: Center(
-                      child: Text('$current / $target',
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600)))),
+              Text('$current / $target',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
               IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: current >= target
@@ -449,7 +471,7 @@ class _HomePageState extends State<HomePage> {
                           }
                           if (mounted) setState(() {});
                         }),
-            ]),
+            ],
           ),
         ));
       }
@@ -534,6 +556,82 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showHabitInfoDialog(BuildContext context, Map<String, dynamic> habit) {
+    final title = habit['title'] as String? ?? '—';
+    final goal = habit['goal'] as String? ?? '';
+    final target = (habit['target'] as int?) ?? 1;
+    final reminder = habit['reminder'] as String? ?? '';
+    final enabled = (habit['enabled'] as bool?) ?? true;
+    final id = habit['id'] as String?;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.info_outline),
+            const SizedBox(width: 8),
+            Expanded(child: Text(title)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (goal.isNotEmpty) ...[
+                const Text('Meta:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(goal),
+                const SizedBox(height: 12),
+              ],
+              const Text('Meta numérica:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('$target vezes por dia'),
+              const SizedBox(height: 12),
+              if (reminder.isNotEmpty) ...[
+                const Text('Lembrete:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(reminder),
+                const SizedBox(height: 12),
+              ],
+              const Text('Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    enabled ? Icons.check_circle : Icons.cancel,
+                    color: enabled ? Colors.green : Colors.red,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(enabled ? 'Ativo' : 'Desativado'),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Fechar'),
+          ),
+          if (id != null)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final navigator = Navigator.of(context);
+                await navigator.push(MaterialPageRoute(
+                    builder: (_) => HabitDetailPage(habitId: id)));
+                if (mounted) await _loadHabits();
+              },
+              child: const Text('Editar'),
+            ),
+        ],
       ),
     );
   }
@@ -679,6 +777,153 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  void _showEditGoalModal(BuildContext context, Map<String, dynamic> goal) {
+    final id = goal['id'] as String;
+    final titleController =
+        TextEditingController(text: (goal['title'] as String?) ?? '');
+    final targetController =
+        TextEditingController(text: ((goal['target'] as int?) ?? 1).toString());
+    final reminderController =
+        TextEditingController(text: (goal['reminder'] as String?) ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Editar Meta'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Título da meta',
+                    hintText: 'Ex: Beber água',
+                    prefixIcon: Icon(Icons.title),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe o título da meta';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: targetController,
+                  decoration: const InputDecoration(
+                    labelText: 'Meta numérica',
+                    hintText: 'Ex: 8 (copos de água)',
+                    prefixIcon: Icon(Icons.numbers),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe a meta numérica';
+                    }
+                    final num = int.tryParse(value.trim());
+                    if (num == null || num <= 0) {
+                      return 'Informe um número válido maior que 0';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: reminderController,
+                  decoration: const InputDecoration(
+                    labelText: 'Lembrete (HH:mm)',
+                    hintText: 'Ex: 09:00',
+                    prefixIcon: Icon(Icons.access_time),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                  onTap: () async {
+                    final time = await showTimePicker(
+                      context: ctx,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      final hour = time.hour.toString().padLeft(2, '0');
+                      final minute = time.minute.toString().padLeft(2, '0');
+                      reminderController.text = '$hour:$minute';
+                    }
+                  },
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final regex = RegExp(r'^([01]?\d|2[0-3]):([0-5]\d)$');
+                      if (!regex.hasMatch(value)) {
+                        return 'Formato inválido. Use HH:mm';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                // Capturar referências antes de fechar o diálogo
+                final prefs = Provider.of<PrefsService>(ctx, listen: false);
+                final navigator = Navigator.of(ctx);
+
+                final title = titleController.text.trim();
+                final target = int.parse(targetController.text.trim());
+                final reminder = reminderController.text.trim();
+
+                // Atualizar a meta localmente
+                await prefs.saveGoal({
+                  'id': id,
+                  'title': title,
+                  'target': target,
+                  'reminder': reminder,
+                  'completed': goal['completed'] ?? false,
+                  'currentProgress': goal['currentProgress'] ?? 0,
+                  'createdAt': goal['createdAt'],
+                });
+
+                // Sincronizar com Supabase
+                try {
+                  final sup = SupabaseService();
+                  await sup.updateGoal(
+                    goalId: id,
+                    title: title,
+                    target: target,
+                    reminder: reminder.isNotEmpty ? reminder : null,
+                  );
+                } catch (e) {
+                  print('❌ Erro ao atualizar meta no Supabase: $e');
+                  // Continua mesmo com erro (local-first)
+                }
+
+                navigator.pop();
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Meta atualizada: $title')),
+                  );
+                  // Reabrir o modal de gerenciamento de metas
+                  _showManageGoalsModal(context, _habits);
+                }
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class HabitDetailPage extends StatefulWidget {
@@ -736,14 +981,29 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
       return;
     }
     final target = int.tryParse(_targetController.text.trim()) ?? 1;
-    await _prefs!.saveHabit({
+    final habitData = {
       'id': widget.habitId,
       'title': title,
       'goal': _goalController.text.trim(),
       'reminder': _reminderController.text.trim(),
       'enabled': _enabled,
       'target': target
-    });
+    };
+    
+    // Salva localmente
+    await _prefs!.saveHabit(habitData);
+    
+    // Sincroniza com Supabase
+    try {
+      final sup = SupabaseService();
+      print('🔄 [_save] Sincronizando hábito editado com Supabase...');
+      await sup.updateHabit(habitData);
+      print('✅ [_save] Hábito sincronizado com Supabase');
+    } catch (e) {
+      print('❌ [_save] Erro ao sincronizar com Supabase: $e');
+      // ignore errors: offline/local-first behavior
+    }
+    
     if (mounted) Navigator.pop(context);
   }
 

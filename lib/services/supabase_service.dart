@@ -78,6 +78,56 @@ class SupabaseService {
     }
   }
 
+  /// Atualiza um hábito existente no Supabase
+  /// Retorna o mapa atualizado ou null em caso de erro
+  Future<Map<String, dynamic>?> updateHabit(Map<String, dynamic> habit) async {
+    final habitId = habit['id']?.toString();
+    if (habitId == null || habitId.isEmpty) {
+      print('❌ [updateHabit] ID do hábito não fornecido');
+      return null;
+    }
+
+    print('📝 [updateHabit] Tentando atualizar hábito com ID: $habitId');
+    try {
+      // Primeiro, verificar se o hábito existe
+      final existing = await _client.from('habits').select().eq('id', habitId);
+      if ((existing as List).isEmpty) {
+        print('⚠️ [updateHabit] Hábito não encontrado no Supabase, criando novo...');
+        return await createHabit(habit);
+      }
+
+      // Prepara os dados para atualização
+      final updates = <String, dynamic>{
+        if (habit.containsKey('title') && habit['title'] != null)
+          'title': habit['title'],
+        if (habit.containsKey('description'))
+          'description': habit['description']
+        else if (habit.containsKey('title'))
+          'description': habit['title'],
+        if (habit.containsKey('frequence_type'))
+          'frequency_type': habit['frequence_type']
+        else if (habit.containsKey('goal'))
+          'frequency_type': habit['goal'],
+        if (habit.containsKey('target_count') || habit.containsKey('target'))
+          'target_count': habit['target_count'] ?? habit['target'] ?? 1,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      print('📝 [updateHabit] Atualizando com dados: $updates');
+      final response = await _client
+          .from('habits')
+          .update(updates)
+          .eq('id', habitId)
+          .select();
+      print('✅ [updateHabit] Resposta do Supabase: $response');
+      if ((response as List).isEmpty) return null;
+      return Map<String, dynamic>.from(response.first);
+    } catch (e) {
+      print('❌ [updateHabit] Erro ao atualizar habit no Supabase: $e');
+      return null;
+    }
+  }
+
   /// Registra a conclusão de um hábito no dia atual
   Future<bool> recordHabitCompletion({
     required String userId,
@@ -359,7 +409,7 @@ class SupabaseService {
       final response =
           await _client.from('goals').select().eq('id', goalId).single();
 
-      return GoalDto.fromJson(response as Map<String, dynamic>);
+      return GoalDto.fromJson(response);
     } catch (e) {
       print('❌ [fetchGoalById] Erro ao buscar meta: $e');
       return null;

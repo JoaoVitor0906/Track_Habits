@@ -136,11 +136,13 @@ class _AppDrawerState extends State<AppDrawer> {
           builder: (context, _, __) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Tirar foto'),
-                onTap: () => _handleImageSelection(context, ImageSource.camera),
-              ),
+              // Câmera não é suportada na web, ocultar opção
+              if (!kIsWeb)
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Tirar foto'),
+                  onTap: () => _handleImageSelection(context, ImageSource.camera),
+                ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Escolher da galeria'),
