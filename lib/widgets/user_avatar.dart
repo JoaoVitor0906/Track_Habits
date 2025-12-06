@@ -153,6 +153,7 @@ class UserAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         shape: BoxShape.circle,
+        // ignore: deprecated_member_use
         border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
       ),
       child: Material(

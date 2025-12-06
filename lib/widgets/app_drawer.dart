@@ -117,6 +117,7 @@ class _AppDrawerState extends State<AppDrawer> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
+                // ignore: deprecated_member_use
                 color: colorScheme.onPrimary.withOpacity(0.7),
                 fontSize: 14,
               ),

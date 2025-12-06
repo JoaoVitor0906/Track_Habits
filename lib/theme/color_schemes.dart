@@ -16,7 +16,7 @@ const ColorScheme lightColorScheme = ColorScheme(
   brightness: Brightness.light,
 
   // Cores primárias (Emerald)
-  primary: Color(0xFF059669), // Emerald principal
+  primary: _seedColor, // Emerald principal
   onPrimary: Color(0xFFFFFFFF), // Branco para contraste
   primaryContainer: Color(0xFFA7F3D0), // Emerald claro
   onPrimaryContainer: Color(0xFF00513A), // Emerald escuro
@@ -53,7 +53,7 @@ const ColorScheme lightColorScheme = ColorScheme(
   inverseSurface: Color(0xFF1E293B), // Slate 800
   onInverseSurface: Color(0xFFF1F5F9), // Slate 100
   inversePrimary: Color(0xFF6EE7B7), // Emerald 300
-  surfaceTint: Color(0xFF059669),
+  surfaceTint: _seedColor,
 );
 
 // =============================================================================
@@ -99,7 +99,7 @@ const ColorScheme darkColorScheme = ColorScheme(
   scrim: Color(0xFF000000),
   inverseSurface: Color(0xFFF1F5F9), // Slate 100
   onInverseSurface: Color(0xFF1E293B), // Slate 800
-  inversePrimary: Color(0xFF059669), // Emerald 600
+  inversePrimary: _seedColor, // Emerald 600
   surfaceTint: Color(0xFF6EE7B7),
 );
 

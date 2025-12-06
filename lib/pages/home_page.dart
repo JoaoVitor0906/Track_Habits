@@ -148,6 +148,7 @@ class _HomePageState extends State<HomePage> {
                                 await prefs.completeGoal(id);
                                 if (ctx.mounted) Navigator.pop(ctx);
                                 if (mounted) {
+                                  // ignore: use_build_context_synchronously
                                   ScaffoldMessenger.of(parentContext).showSnackBar(
                                     SnackBar(
                                         content:
@@ -192,6 +193,7 @@ class _HomePageState extends State<HomePage> {
 
                                   if (ctx.mounted) Navigator.pop(ctx);
                                   if (mounted) {
+                                    // ignore: use_build_context_synchronously
                                     ScaffoldMessenger.of(parentContext).showSnackBar(
                                       SnackBar(
                                           content:
@@ -767,6 +769,7 @@ class _HomePageState extends State<HomePage> {
                     SnackBar(content: Text('Meta criada: $title')),
                   );
                   // Abrir o modal de gerenciamento de metas para mostrar a nova meta
+                  // ignore: use_build_context_synchronously
                   _showManageGoalsModal(context, _habits);
                 }
               }
@@ -910,10 +913,12 @@ class _HomePageState extends State<HomePage> {
                 navigator.pop();
 
                 if (mounted) {
+                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Meta atualizada: $title')),
                   );
                   // Reabrir o modal de gerenciamento de metas
+                  // ignore: use_build_context_synchronously
                   _showManageGoalsModal(context, _habits);
                 }
               }
