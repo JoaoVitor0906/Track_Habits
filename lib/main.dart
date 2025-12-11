@@ -13,7 +13,6 @@ import 'pages/home_page.dart';
 import 'pages/create_habit_page.dart';
 import 'pages/history_page.dart';
 import 'pages/settings_privacy_page.dart';
-import 'features/providers/presentation/providers_page.dart';
 import 'services/prefs_service.dart';
 import 'services/preferences_services.dart';
 import 'services/local_photo_store.dart';
@@ -243,7 +242,6 @@ class TrackHabitsApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingPage(),
         '/consent': (context) => const ConsentPage(),
         '/home': (context) => const HomePage(),
-        '/providers': (context) => const ProvidersPage(),
         '/create-habit': (context) => const CreateHabitPage(),
         '/history': (context) => const HistoryPage(),
         '/settings/privacy': (context) => const SettingsPrivacyPage(),
