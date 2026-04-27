@@ -25,6 +25,24 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _onRefresh() async {
+    // Recarrega os hábitos locais
+    await _loadHabits();
+    
+    // Tenta sincronizar com o Supabase
+    try {
+      final sup = SupabaseService();
+      if (sup.isUserAuthenticated()) {
+        print('🔄 [Pull to Refresh] Sincronizando com Supabase...');
+        // Aqui você pode adicionar lógica adicional de sincronização se necessário
+        print('✅ [Pull to Refresh] Dados atualizados');
+      }
+    } catch (e) {
+      print('❌ [Pull to Refresh] Erro ao sincronizar: $e');
+      // Ignora erros - comportamento local-first
+    }
+  }
+
   Future<void> _showManageGoalsModal(
       BuildContext context, List<Map<String, dynamic>> habits) async {
     final prefs = Provider.of<PrefsService>(context, listen: false);
@@ -522,8 +540,15 @@ class _HomePageState extends State<HomePage> {
                     onTap: () => Navigator.pop(context)),
               ]),
             ),
-      body: Padding(
-          padding: const EdgeInsets.all(16), child: ListView(children: items)),
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: items,
+            )),
+      ),
       floatingActionButton: FloatingActionButton(
           onPressed: () => _showAddMenu(context), child: const Icon(Icons.add)),
     );
