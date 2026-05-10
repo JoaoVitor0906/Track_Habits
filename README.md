@@ -180,5 +180,6 @@ Métodos principais:
 Disciplina: *Aplicações para Dispositivos Móveis*  
 Instituição: UTFPR  
 Versão: **v1.5.12 — Dezembro/2025**
+
 Professor: Everton Coimbra De Araujo
 ---
